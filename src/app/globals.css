@@ -1,0 +1,381 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #dc2626;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-white text-ink antialiased;
+  overflow-x: clip;
+}
+
+::selection {
+  background: #dc2626;
+  color: #fff;
+}
+
+@keyframes blind-in {
+  from {
+    opacity: 0;
+    transform: rotateX(85deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0);
+  }
+}
+
+@keyframes blind-out {
+  from {
+    opacity: 1;
+    transform: rotateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: rotateX(-85deg);
+  }
+}
+
+.animate-blind-in {
+  transform-origin: 50% 100%;
+  animation: blind-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-blind-out {
+  transform-origin: 50% 0%;
+  animation: blind-out 0.45s ease-in both;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.4);
+  }
+}
+
+.animate-float {
+  animation: float 7s ease-in-out infinite;
+}
+
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+.reveal {
+  opacity: 0;
+  transition:
+    opacity 0.6s ease,
+    transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+
+.reveal[data-reveal="up"] {
+  transform: translateY(64px);
+}
+
+.reveal[data-reveal="left"] {
+  transform: translateX(-55vw) rotate(-7deg);
+}
+
+.reveal[data-reveal="right"] {
+  transform: translateX(55vw) rotate(7deg);
+}
+
+.reveal[data-reveal="top"] {
+  transform: translateY(-45vh) scale(0.9);
+}
+
+.reveal[data-reveal="zoom"] {
+  transform: scale(0.55) rotate(4deg);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* 3D tilt wrapper */
+.tilt {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Aurora — slowly drifting gradient blobs */
+@keyframes aurora {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(70px, -50px) scale(1.15);
+  }
+  66% {
+    transform: translate(-50px, 40px) scale(0.92);
+  }
+}
+
+.animate-aurora {
+  animation: aurora 14s ease-in-out infinite;
+}
+
+/* Kinetic line rise — hero copy lines slide up on load */
+@keyframes rise {
+  from {
+    transform: translateY(115%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  display: inline-block;
+  animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Giant outlined watermark text */
+.text-stroke {
+  -webkit-text-stroke: 1px rgba(220, 38, 38, 0.3);
+  color: transparent;
+}
+
+.text-stroke-light {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.18);
+  color: transparent;
+}
+
+/* Cursor spotlight glow for cards */
+.spotlight {
+  position: relative;
+}
+
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    320px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(220, 38, 38, 0.16),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.spotlight:hover::after {
+  opacity: 1;
+}
+
+/* Glossy shine sweep on hover (element needs a positioned ancestor/self) */
+.shine {
+  overflow: hidden;
+}
+
+.shine::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.12) 46%,
+    rgba(255, 255, 255, 0.32) 50%,
+    rgba(255, 255, 255, 0.12) 54%,
+    transparent 65%
+  );
+  transform: translateX(-130%) skewX(-12deg);
+}
+
+.shine:hover::before,
+.shine-host:hover .shine::before {
+  transform: translateX(130%) skewX(-12deg);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Brand intro — words converge from three edges into the logo lockup,
+   which then FLIP-flies to the header logo (JS-driven transform). */
+.brand-word-left {
+  display: inline-block;
+  animation: brand-from-left 0.65s cubic-bezier(0.22, 1, 0.36, 1) 2.45s both;
+}
+
+.brand-word-right {
+  display: inline-block;
+  animation: brand-from-right 0.65s cubic-bezier(0.22, 1, 0.36, 1) 2.58s both;
+}
+
+.brand-word-up {
+  animation: brand-from-bottom 0.7s cubic-bezier(0.22, 1, 0.36, 1) 2.72s both;
+}
+
+@keyframes brand-from-left {
+  from {
+    transform: translateX(-70vw);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes brand-from-right {
+  from {
+    transform: translateX(70vw);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes brand-from-bottom {
+  from {
+    transform: translateY(70vh);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Fallback: if client JS never runs, the intro still clears itself.
+   Delayed well past the normal JS-driven sequence (which ends ~5s after
+   hydration) so it can never clip the logo flight. */
+.brand-intro-root {
+  animation: intro-out 0.4s ease 10s forwards;
+}
+
+@keyframes intro-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* The lockup's flight to the header — transform/opacity set from JS. */
+.brand-lockup {
+  transform-origin: center;
+  transition:
+    transform 0.85s cubic-bezier(0.65, 0, 0.25, 1),
+    opacity 0.3s ease 0.55s;
+  will-change: transform, opacity;
+}
+
+/* Real header logo stays hidden until the flying lockup lands (home only).
+   Normally JS reveals it on landing; this animation is the dead-JS fallback. */
+.logo-delayed {
+  animation: logo-in 0.45s ease 5.2s both;
+}
+
+@keyframes logo-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Glass blind reveal — the hero loads under a dull glass sheet, then the
+   pane slides down and everything it passes becomes crystal clear.
+   A subtle bright edge marks the bottom of the moving pane. */
+.glass-blind {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(4px) brightness(0.8) saturate(0.75);
+  transform: translateY(0);
+  animation: glass-blind-down 2s cubic-bezier(0.55, 0, 0.25, 1) 400ms forwards;
+  will-change: transform;
+}
+
+.glass-blind::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 0 18px 3px rgba(255, 255, 255, 0.35),
+    0 10px 45px rgba(255, 255, 255, 0.2);
+}
+
+@keyframes glass-blind-down {
+  to {
+    transform: translateY(102%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .animate-float,
+  .animate-marquee,
+  .animate-blind-in,
+  .animate-blind-out,
+  .animate-aurora,
+  .animate-rise,
+  .brand-word-left,
+  .brand-word-right,
+  .brand-word-up,
+  .brand-intro-root,
+  .logo-delayed,
+  .tilt {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none !important;
+  }
+
+  .shine::before {
+    display: none;
+  }
+
+  .glass-blind {
+    display: none;
+  }
+}

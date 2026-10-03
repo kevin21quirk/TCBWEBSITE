@@ -1,0 +1,68 @@
+import { readFileSync } from "node:fs";
+import { neon } from "@neondatabase/serverless";
+import bcrypt from "bcryptjs";
+
+const env = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
+const url = env.match(/^DATABASE_URL=(.+)$/m)?.[1].trim();
+if (!url) throw new Error("DATABASE_URL missing in .env.local");
+
+const sql = neon(url);
+
+const statements = [
+  `CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN ('super_admin','staff')),
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS leads (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
+    company TEXT,
+    message TEXT,
+    source TEXT NOT NULL DEFAULT 'website',
+    status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','contacted','qualified','won','lost')),
+    assigned_to INT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS lead_activities (
+    id SERIAL PRIMARY KEY,
+    lead_id INT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    type TEXT NOT NULL DEFAULT 'note',
+    body TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS leads_status_idx ON leads(status)`,
+  `CREATE INDEX IF NOT EXISTS leads_assigned_idx ON leads(assigned_to)`,
+  `CREATE INDEX IF NOT EXISTS lead_activities_lead_idx ON lead_activities(lead_id)`,
+];
+
+for (const s of statements) {
+  await sql.query(s);
+  console.log("ok:", s.split("\n")[0].trim().slice(0, 60));
+}
+
+const hash = bcrypt.hashSync("a15Dz6fl!", 10);
+await sql.query(
+  `INSERT INTO users (email, name, password_hash, role)
+   VALUES ($1, $2, $3, 'super_admin')
+   ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = 'super_admin'`,
+  ["kevin@aibridgesolutions.co.uk", "Kevin", hash]
+);
+console.log("seeded super admin: kevin@aibridgesolutions.co.uk");
+
+const tables = await sql`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name`;
+console.log("tables:", tables.map((t) => t.table_name).join(", "));
