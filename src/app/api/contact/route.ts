@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
   // Store the enquiry as a CRM lead — never let a DB hiccup lose the enquiry.
   try {
-    await sql`
+    const rows = await sql`
       INSERT INTO leads (name, email, phone, message, source)
       VALUES (
         ${type === "newsletter" ? email : `${fields.firstName} ${fields.lastName}`.trim() || email},
@@ -70,7 +70,15 @@ export async function POST(request: Request) {
           ? "Newsletter signup"
           : (fields.subject ? `Subject: ${fields.subject}\n\n` : "") + fields.message || null},
         ${type === "newsletter" ? "newsletter" : "contact form"}
-      )`;
+      )
+      RETURNING id`;
+    // Chase the enquiry after 1 week if nobody's responded by then —
+    // the follow-up auto-completes once the lead is progressed.
+    if (type === "contact") {
+      await sql`
+        INSERT INTO follow_ups (lead_id, title, due_at, auto)
+        VALUES (${rows[0].id}, 'Chase up — no response yet', now() + interval '7 days', true)`;
+    }
   } catch (err) {
     console.error("[crm] failed to store lead", err);
   }

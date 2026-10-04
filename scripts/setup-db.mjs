@@ -72,6 +72,19 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS page_views_visitor_idx ON page_views(visitor_id)`,
   `CREATE INDEX IF NOT EXISTS page_views_created_idx ON page_views(created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS visitors_last_seen_idx ON visitors(last_seen DESC)`,
+  `CREATE TABLE IF NOT EXISTS follow_ups (
+    id SERIAL PRIMARY KEY,
+    lead_id INT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    assigned_to INT REFERENCES users(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    due_at TIMESTAMPTZ NOT NULL,
+    done BOOLEAN NOT NULL DEFAULT false,
+    done_at TIMESTAMPTZ,
+    auto BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS follow_ups_lead_idx ON follow_ups(lead_id)`,
+  `CREATE INDEX IF NOT EXISTS follow_ups_due_idx ON follow_ups(due_at) WHERE done = false`,
 ];
 
 for (const s of statements) {

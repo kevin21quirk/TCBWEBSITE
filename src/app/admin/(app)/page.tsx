@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { LEAD_STATUSES, STATUS_STYLES, type Lead, type LeadStatus } from "@/lib/crm";
+import {
+  LEAD_STATUSES,
+  STATUS_STYLES,
+  type FollowUp,
+  type Lead,
+  type LeadStatus,
+} from "@/lib/crm";
 import { sql } from "@/lib/db";
 
 export const metadata = { title: "Dashboard" };
@@ -13,7 +19,7 @@ const fmt = new Intl.DateTimeFormat("en-GB", {
 });
 
 export default async function DashboardPage() {
-  const [counts, recent, recentActivity] = await Promise.all([
+  const [counts, recent, recentActivity, followUps] = await Promise.all([
     sql`SELECT status, count(*)::int AS n FROM leads GROUP BY status`,
     sql`SELECT l.*, u.name AS assignee_name FROM leads l
         LEFT JOIN users u ON u.id = l.assigned_to
@@ -23,6 +29,12 @@ export default async function DashboardPage() {
         LEFT JOIN users u ON u.id = a.user_id
         JOIN leads l ON l.id = a.lead_id
         ORDER BY a.created_at DESC LIMIT 8`,
+    sql`SELECT f.*, l.name AS lead_name, u.name AS assignee_name
+        FROM follow_ups f
+        JOIN leads l ON l.id = f.lead_id
+        LEFT JOIN users u ON u.id = f.assigned_to
+        WHERE f.done = false AND f.due_at < now() + interval '7 days'
+        ORDER BY f.due_at LIMIT 8`,
   ]);
 
   const byStatus = Object.fromEntries(
@@ -157,6 +169,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* right column: activity + follow-ups */}
+        <div className="space-y-6">
         {/* activity feed */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-6 py-4">
@@ -202,6 +216,53 @@ export default async function DashboardPage() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* follow-ups due */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+              Follow-ups Due
+            </h2>
+            <Link
+              href="/admin/calendar"
+              className="text-xs font-semibold text-brand hover:text-brand-light"
+            >
+              Calendar →
+            </Link>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {(followUps as (FollowUp & { lead_name: string })[]).map((f) => {
+              const overdue = new Date(f.due_at) < new Date();
+              return (
+                <Link
+                  key={f.id}
+                  href={`/admin/leads/${f.lead_id}`}
+                  className="block px-6 py-4 transition-colors hover:bg-slate-50"
+                >
+                  <p className="text-sm font-semibold text-ink">{f.lead_name}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {f.title}
+                    {f.assignee_name ? ` · ${f.assignee_name}` : ""}
+                  </p>
+                  <p
+                    className={`mt-1 text-[11px] font-semibold ${
+                      overdue ? "text-red-600" : "text-slate-400"
+                    }`}
+                  >
+                    {overdue ? "Overdue · " : "Due "}
+                    {fmt.format(new Date(f.due_at))}
+                  </p>
+                </Link>
+              );
+            })}
+            {followUps.length === 0 && (
+              <p className="px-6 py-10 text-center text-sm text-slate-400">
+                Nothing due in the next 7 days.
+              </p>
+            )}
+          </div>
+        </div>
         </div>
       </div>
     </div>

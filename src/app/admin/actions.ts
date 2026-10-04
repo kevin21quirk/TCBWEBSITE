@@ -45,15 +45,24 @@ export async function updateLeadStatus(leadId: number, status: string) {
   const user = await requireUser();
   if (!validStatus(status)) return;
   await sql`UPDATE leads SET status = ${status}, updated_at = now() WHERE id = ${leadId}`;
+  // Progressing a lead means we've made contact — the automatic
+  // "no response" chase is no longer needed.
+  if (status !== "new") {
+    await sql`UPDATE follow_ups SET done = true, done_at = now()
+      WHERE lead_id = ${leadId} AND auto = true AND done = false`;
+  }
   await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'status', ${`Status changed to ${status}`})`;
   revalidatePath(`/admin/leads/${leadId}`);
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
+  revalidatePath("/admin/calendar");
 }
 
 export async function assignLead(leadId: number, userId: number | null) {
   const user = await requireUser();
   await sql`UPDATE leads SET assigned_to = ${userId}, updated_at = now() WHERE id = ${leadId}`;
+  await sql`UPDATE follow_ups SET assigned_to = ${userId}
+    WHERE lead_id = ${leadId} AND done = false`;
   const assignee = userId
     ? ((await sql`SELECT name FROM users WHERE id = ${userId}`)[0]?.name ?? "a team member")
     : "Unassigned";
@@ -90,8 +99,36 @@ export async function createLead(
     INSERT INTO leads (name, email, phone, company, linkedin_url, message, source)
     VALUES (${name}, ${email}, ${phone}, ${company}, ${linkedinUrl}, ${message}, ${source})
     RETURNING id`;
+  await sql`
+    INSERT INTO follow_ups (lead_id, title, due_at, auto)
+    VALUES (${rows[0].id}, 'Chase up — no response yet', now() + interval '7 days', true)`;
   revalidatePath("/admin/leads");
   redirect(`/admin/leads/${rows[0].id}`);
+}
+
+/* ---------- follow-ups ---------- */
+
+export async function addFollowUp(leadId: number, formData: FormData) {
+  const user = await requireUser();
+  const title = String(formData.get("title") ?? "").trim();
+  const due = String(formData.get("due_at") ?? "").trim();
+  const date = new Date(due);
+  if (!title || Number.isNaN(date.getTime())) return;
+  await sql`
+    INSERT INTO follow_ups (lead_id, assigned_to, title, due_at)
+    VALUES (${leadId}, ${user.id}, ${title}, ${date.toISOString()})`;
+  await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'follow_up', ${`Follow-up scheduled: ${title}`})`;
+  revalidatePath(`/admin/leads/${leadId}`);
+  revalidatePath("/admin/calendar");
+  revalidatePath("/admin");
+}
+
+export async function completeFollowUp(id: number, leadId: number | null) {
+  await requireUser();
+  await sql`UPDATE follow_ups SET done = true, done_at = now() WHERE id = ${id}`;
+  if (leadId) revalidatePath(`/admin/leads/${leadId}`);
+  revalidatePath("/admin/calendar");
+  revalidatePath("/admin");
 }
 
 /* ---------- users (super admin) ---------- */

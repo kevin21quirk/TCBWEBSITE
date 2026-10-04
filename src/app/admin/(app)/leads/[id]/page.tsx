@@ -1,7 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addNote, assignLead, updateLeadStatus } from "@/app/admin/actions";
-import { LEAD_STATUSES, STATUS_STYLES, type Lead, type LeadActivity } from "@/lib/crm";
+import {
+  addFollowUp,
+  addNote,
+  assignLead,
+  completeFollowUp,
+  updateLeadStatus,
+} from "@/app/admin/actions";
+import {
+  LEAD_STATUSES,
+  STATUS_STYLES,
+  nextSteps,
+  type FollowUp,
+  type Lead,
+  type LeadActivity,
+} from "@/lib/crm";
 import { sql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -26,10 +39,11 @@ export default async function LeadDetailPage({
   const leadId = parseInt(id, 10);
   if (Number.isNaN(leadId)) notFound();
 
-  const [leads, staff, activity] = await Promise.all([
+  const [leads, staff, activity, followUps] = await Promise.all([
     sql`SELECT l.*, u.name AS assignee_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id = ${leadId}`,
     sql`SELECT id, name FROM users WHERE active = true ORDER BY name`,
     sql`SELECT a.*, u.name AS user_name FROM lead_activities a LEFT JOIN users u ON u.id = a.user_id WHERE a.lead_id = ${leadId} ORDER BY a.created_at DESC`,
+    sql`SELECT f.*, u.name AS assignee_name FROM follow_ups f LEFT JOIN users u ON u.id = f.assigned_to WHERE f.lead_id = ${leadId} ORDER BY f.done, f.due_at`,
   ]);
   const lead = leads[0] as Lead | undefined;
   if (!lead) notFound();
@@ -37,6 +51,14 @@ export default async function LeadDetailPage({
   const statusAction = updateLeadStatus.bind(null, leadId);
   const assignAction = assignLead.bind(null, leadId);
   const noteAction = addNote.bind(null, leadId);
+  const followUpAction = addFollowUp.bind(null, leadId);
+
+  const now = new Date();
+  const openFollowUps = (followUps as FollowUp[]).filter((f) => !f.done);
+  const steps = nextSteps(lead, {
+    overdue: openFollowUps.some((f) => new Date(f.due_at) < now),
+    hasNotes: (activity as LeadActivity[]).some((a) => a.type === "note"),
+  });
 
   return (
     <div className="space-y-6">
@@ -202,6 +224,23 @@ export default async function LeadDetailPage({
 
         {/* actions sidebar */}
         <div className="space-y-6">
+          {/* recommended next steps */}
+          <div className="rounded-2xl border border-brand/20 bg-gradient-to-br from-brand/[0.04] to-orange-50 p-6 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+              Recommended Next Steps
+            </h2>
+            <ol className="mt-4 space-y-2.5">
+              {steps.map((s, i) => (
+                <li key={i} className="flex gap-3 text-sm text-ink">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white">
+                    {i + 1}
+                  </span>
+                  <span className="leading-snug">{s}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
               Update Status
@@ -263,6 +302,87 @@ export default async function LeadDetailPage({
                 </form>
               ))}
             </div>
+          </div>
+
+          {/* follow-ups */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+                Follow-ups
+              </h2>
+              <Link
+                href="/admin/calendar"
+                className="text-xs font-semibold text-brand hover:text-brand-light"
+              >
+                Calendar →
+              </Link>
+            </div>
+            <div className="mt-4 space-y-2">
+              {(followUps as FollowUp[]).map((f) => {
+                const overdue = !f.done && new Date(f.due_at) < now;
+                return (
+                  <div
+                    key={f.id}
+                    className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-sm ${
+                      f.done
+                        ? "border-slate-100 text-slate-400"
+                        : overdue
+                          ? "border-red-200 bg-red-50/60 text-red-700"
+                          : "border-slate-200 text-ink"
+                    }`}
+                  >
+                    <form action={completeFollowUp.bind(null, f.id, leadId)}>
+                      <button
+                        type="submit"
+                        disabled={f.done}
+                        aria-label={f.done ? "Done" : "Mark done"}
+                        className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold transition-colors ${
+                          f.done
+                            ? "border-emerald-300 bg-emerald-500 text-white"
+                            : "border-slate-300 text-transparent hover:border-emerald-400 hover:text-emerald-500"
+                        }`}
+                      >
+                        ✓
+                      </button>
+                    </form>
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate font-medium ${f.done ? "line-through" : ""}`}>
+                        {f.title}
+                      </p>
+                      <p className="text-xs opacity-80">
+                        {fmt.format(new Date(f.due_at))}
+                        {f.assignee_name ? ` · ${f.assignee_name}` : ""}
+                        {f.auto ? " · auto" : ""}
+                        {overdue ? " · overdue" : ""}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              {followUps.length === 0 && (
+                <p className="text-xs text-slate-400">No follow-ups scheduled.</p>
+              )}
+            </div>
+            <form action={followUpAction} className="mt-4 flex gap-2">
+              <input
+                name="title"
+                required
+                placeholder="New follow-up…"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand focus:bg-white focus:outline-none"
+              />
+              <input
+                name="due_at"
+                type="date"
+                required
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand focus:bg-white focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="shrink-0 rounded-xl bg-ink px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition-colors hover:bg-slate-800"
+              >
+                Add
+              </button>
+            </form>
           </div>
 
           {lead.email && (
