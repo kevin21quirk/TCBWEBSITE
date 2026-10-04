@@ -100,22 +100,27 @@ export default function Header() {
       {/* gradient hairline */}
       <div className="h-[3px] w-full bg-gradient-to-r from-brand via-orange-400 to-brand" />
 
-      <div className="mx-auto max-w-site px-4">
+      <div
+        className={`mx-auto max-w-site px-4 transition-all duration-500 ${
+          scrolled ? "" : "lg:max-w-full lg:px-0"
+        }`}
+      >
         {/* gradient ring */}
         <div
-          className={`mt-3 rounded-full bg-gradient-to-r p-px transition-all duration-300 ${
+          className={`mt-3 rounded-full bg-gradient-to-r p-px transition-all duration-500 ${
             scrolled || open
               ? "from-brand/60 via-orange-300/60 to-brand/60 shadow-2xl shadow-brand/15"
-              : "from-white/70 via-brand/30 to-white/70"
+              : "from-white/70 via-brand/30 to-white/70 lg:mt-0 lg:rounded-none"
           }`}
         >
           <div
-            className={`relative flex items-center justify-between rounded-full px-5 transition-all duration-500 ${
+            className={`relative px-5 transition-all duration-500 ${
               scrolled || open
-                ? "bg-white/90 py-2.5 backdrop-blur-xl"
-                : "bg-white/75 py-2.5 backdrop-blur-md lg:px-10 lg:py-5"
+                ? "rounded-full bg-white/90 py-2.5 backdrop-blur-xl"
+                : "rounded-full bg-white/75 py-2.5 backdrop-blur-md lg:rounded-none lg:px-10 lg:py-5"
             }`}
           >
+            <div className="mx-auto flex w-full max-w-site items-center justify-between">
             <Link
               href="/"
               aria-label="The Contractor Broker home"
@@ -269,6 +274,7 @@ export default function Header() {
                 className={`h-0.5 w-6 bg-brand transition-transform ${open ? "-translate-y-2 -rotate-45" : ""}`}
               />
             </button>
+            </div>
           </div>
         </div>
 

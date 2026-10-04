@@ -507,3 +507,17 @@ body {
     display: none;
   }
 }
+
+/* Phones (and anything using the compact/hamburger header): skip the brand
+   intro entirely — hero text and the header logo appear instantly. */
+@media (max-width: 1023px) {
+  .brand-intro-root,
+  .glass-blind {
+    display: none;
+  }
+
+  .animate-rise,
+  .logo-delayed {
+    animation: none;
+  }
+}

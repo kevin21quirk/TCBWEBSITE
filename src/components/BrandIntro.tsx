@@ -14,7 +14,12 @@ export default function BrandIntro() {
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    // Skip entirely on compact/mobile layouts and reduced-motion devices —
+    // CSS shows the hero text and header logo instantly there.
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      window.matchMedia("(max-width: 1023px)").matches
+    ) {
       setGone(true);
       return;
     }
