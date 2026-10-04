@@ -89,7 +89,7 @@ export default function ScrollStory() {
 
         {/* progress rail */}
         <div className="absolute left-6 top-1/2 hidden -translate-y-1/2 md:left-12 lg:block">
-          <div className="relative h-56 w-px bg-white/15">
+          <div className="relative h-36 w-px bg-white/15">
             <div
               className="absolute left-0 top-0 w-px bg-gradient-to-b from-brand to-orange-400 transition-[height] duration-100"
               style={{ height: `${progress * 100}%` }}
