@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { BenefitsAnim, CallAnim, FormAnim } from "@/components/StepAnimations";
 
 const scenes = [
   {
@@ -14,6 +15,7 @@ const scenes = [
     icon: "/images/iconmonstr-clipboard-6-240.png",
     href: "/contact",
     linkLabel: "Online Form",
+    Anim: FormAnim,
   },
   {
     num: "02",
@@ -22,6 +24,7 @@ const scenes = [
     description:
       "A specialist reviews your situation and matches you with vetted, compliant umbrella companies.",
     icon: "/images/iconmonstr-phone-13-240.png",
+    Anim: CallAnim,
   },
   {
     num: "03",
@@ -30,6 +33,7 @@ const scenes = [
     description:
       "Same-day payments, IR35 compliance and statutory benefits — all handled for you.",
     icon: "/images/iconmonstr-check-mark-circle-lined-240.png",
+    Anim: BenefitsAnim,
   },
 ];
 
@@ -119,7 +123,33 @@ export default function ScrollStory() {
           </div>
         </div>
 
-        {/* scenes */}
+        {/* illustrations (right) */}
+        <div
+          className="absolute inset-y-0 right-0 hidden w-[48%] items-center justify-center pt-16 lg:flex"
+          aria-hidden="true"
+        >
+          {scenes.map((s, i) => {
+            const off = i - t;
+            const Anim = s.Anim;
+            return (
+              <div
+                key={s.step}
+                className="absolute"
+                style={{
+                  opacity: Math.max(0, 1 - Math.abs(off) * 1.4),
+                  transform: `translateY(${off * 60}px) scale(${1 - Math.min(Math.abs(off), 1) * 0.08})`,
+                }}
+              >
+                <div className="scale-90 xl:scale-100">
+                  <Anim key={active === i ? "on" : "off"} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* scenes (middle) */}
+        <div className="absolute inset-0 lg:left-40 lg:right-[48%] xl:left-48">
         {scenes.map((s, i) => {
           const off = i - t;
           const opacity = Math.max(0, 1 - Math.abs(off));
@@ -152,7 +182,7 @@ export default function ScrollStory() {
                 <p className="mt-6 inline-block rounded-full bg-gradient-to-r from-brand to-brand-light px-4 py-1 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-brand/40">
                   {s.step}
                 </p>
-                <h3 className="mx-auto mt-5 max-w-xl text-2xl font-bold text-white md:text-4xl">
+                <h3 className="mx-auto mt-5 max-w-xl text-2xl font-bold text-white md:text-4xl lg:text-3xl xl:text-4xl">
                   {s.title}
                 </h3>
                 <p className="mx-auto mt-4 max-w-md leading-relaxed text-slate-300">
@@ -170,6 +200,7 @@ export default function ScrollStory() {
             </div>
           );
         })}
+        </div>
 
         {/* scroll hint */}
         <div
