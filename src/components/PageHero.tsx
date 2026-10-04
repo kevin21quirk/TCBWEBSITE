@@ -27,7 +27,7 @@ export default function PageHero({
         <div className="absolute inset-0 bg-ink/55" aria-hidden="true" />
       )}
       <div
-        className={`relative mx-auto max-w-site px-6 pb-20 pt-36 md:pb-28 md:pt-44 ${
+        className={`relative mx-auto max-w-site px-6 pb-20 pt-36 md:pb-28 md:pt-44 lg:pt-56 xl:pt-60 ${
           centered ? "text-center" : ""
         }`}
       >

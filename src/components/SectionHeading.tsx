@@ -13,13 +13,17 @@ export default function SectionHeading({
   align?: "left" | "center";
   dark?: boolean;
 }) {
-  const alignClass = align === "center" ? "text-center mx-auto" : "text-left";
+  // "left" headings centre on stacked (mobile/tablet) layouts.
+  const alignClass =
+    align === "center"
+      ? "text-center mx-auto"
+      : "text-center mx-auto lg:text-left lg:mx-0";
   return (
     <div className={`max-w-2xl ${alignClass}`}>
       {eyebrow && (
         <p
           className={`mb-3 flex items-center gap-3 text-sm font-semibold uppercase tracking-widest ${
-            align === "center" ? "justify-center" : ""
+            align === "center" ? "justify-center" : "justify-center lg:justify-start"
           } ${dark ? "text-brand-light" : "text-brand"}`}
         >
           <span className="h-px w-8 bg-gradient-to-r from-transparent to-brand" />

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex items-center gap-3 text-sm text-brand">
+    <p className="flex items-center justify-center gap-3 text-sm text-brand lg:justify-start">
       {children}
       <svg
         className="h-3 w-20"
@@ -55,17 +55,17 @@ export default function ServicesPage() {
             height={1080}
             className="aspect-[5/4] w-full object-cover"
           />
-          <div className="relative bg-white px-2 py-8 lg:-ml-6 lg:px-6 lg:py-10">
+          <div className="relative bg-white px-2 py-8 text-center lg:-ml-6 lg:px-6 lg:py-10 lg:text-left">
             <Reveal direction="top">
               <Eyebrow>Our Services</Eyebrow>
             </Reveal>
             <Reveal direction="top" delay={150}>
-              <h2 className="mt-5 max-w-md text-3xl font-bold leading-tight text-brand md:text-4xl">
+              <h2 className="mx-auto mt-5 max-w-md text-3xl font-bold leading-tight text-brand md:text-4xl lg:mx-0">
                 Unlock the Benefits of Our Services
               </h2>
             </Reveal>
             <Reveal direction="top" delay={300}>
-              <p className="mt-6 max-w-md text-sm leading-relaxed text-slate-500">
+              <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-slate-500 lg:mx-0">
                 Explore how our tailored solutions can simplify your work,
                 ensure compliance, and bring peace of mind to your life.
               </p>
@@ -77,7 +77,7 @@ export default function ServicesPage() {
       {/* We simplify + all services */}
       <section className="mx-auto max-w-site px-6 py-16">
         <div className="grid gap-12 lg:grid-cols-[2fr_3fr] lg:gap-20">
-          <div className="flex flex-col">
+          <div className="flex flex-col text-center lg:text-left">
             <Eyebrow>Our Services</Eyebrow>
             <h2 className="mt-6 text-4xl font-bold leading-tight text-brand md:text-5xl">
               We Simplify Contractor Payments and Ensure Compliance with
@@ -110,11 +110,11 @@ export default function ServicesPage() {
               alt="The Contractor Broker"
               width={300}
               height={90}
-              className="mt-auto w-full px-4 pt-10"
+              className="mx-auto mt-auto w-full max-w-sm px-4 pt-10 lg:max-w-none"
             />
           </div>
 
-          <div className="grid content-between gap-x-8 gap-y-12 sm:grid-cols-2">
+          <div className="grid content-between gap-x-8 gap-y-12 text-center sm:grid-cols-2 sm:text-left">
             {allServices.map((s, i) => (
               <Reveal
                 key={s.title}

@@ -40,7 +40,7 @@ export default function IndustriesPage() {
                 height={1080}
                 className="w-full rounded-tcb object-cover"
               />
-              <div>
+              <div className="text-center lg:text-left">
                 <h2 className="text-2xl font-bold text-ink md:text-3xl">
                   {ind.title}
                 </h2>

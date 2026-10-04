@@ -17,7 +17,7 @@ export default function ContactPage() {
 
       <section className="mx-auto max-w-site px-6 py-20">
         <div className="grid gap-12 lg:grid-cols-[360px_1fr]">
-          <aside className="space-y-6">
+          <aside className="space-y-6 text-center lg:text-left">
             <div className="rounded-tcb border border-slate-200 bg-white p-8">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-brand">
                 Email Address
@@ -44,7 +44,7 @@ export default function ContactPage() {
               <h2 className="text-sm font-semibold uppercase tracking-widest text-brand">
                 Follow Us on Social Media
               </h2>
-              <div className="mt-4 flex gap-3">
+              <div className="mt-4 flex justify-center gap-3 lg:justify-start">
                 {socials.map((s) => (
                   <a
                     key={s.label}
@@ -62,8 +62,8 @@ export default function ContactPage() {
           </aside>
 
           <div id="contact-details" className="rounded-tcb bg-slate-50 p-8 md:p-10">
-            <h2 className="text-2xl font-bold text-ink">Send Us a Message</h2>
-            <p className="mt-2 text-sm text-muted">
+            <h2 className="text-center text-2xl font-bold text-ink lg:text-left">Send Us a Message</h2>
+            <p className="mt-2 text-center text-sm text-muted lg:text-left">
               Fill in the form below and one of our experts will be in touch —
               usually within 24 hours.
             </p>

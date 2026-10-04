@@ -60,8 +60,8 @@ export default function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="relative mx-auto grid max-w-site items-center gap-12 px-6 pb-20 pt-40 md:pb-28 md:pt-48 lg:grid-cols-2">
-          <div>
+        <div className="relative mx-auto grid max-w-site items-center gap-12 px-6 pb-20 pt-40 md:pb-28 md:pt-48 lg:grid-cols-2 lg:pt-60 xl:pt-64">
+          <div className="text-center lg:text-left">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur-md">
               <span className="animate-pulse-dot h-2 w-2 rounded-full bg-brand-light" />
               UK Umbrella Company Broker
@@ -94,14 +94,14 @@ export default function HomePage() {
             </h1>
             <span className="block overflow-hidden">
               <span
-                className="animate-rise mt-5 block max-w-md leading-relaxed text-slate-300"
+                className="animate-rise mx-auto mt-5 block max-w-md leading-relaxed text-slate-300 lg:mx-0"
                 style={{ animationDelay: "4650ms" }}
               >
                 We compare the market, handle the paperwork and keep you fully
                 compliant — so you can get on with the work you love.
               </span>
             </span>
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-8 flex flex-wrap justify-center gap-4 lg:justify-start">
               <Magnetic>
                 <Link
                   href="/contact"
@@ -121,13 +121,13 @@ export default function HomePage() {
               </Magnetic>
             </div>
 
-            <div className="mt-10 flex divide-x divide-white/15">
+            <div className="mt-10 flex justify-center divide-x divide-white/15 lg:justify-start">
               {heroStats.map((s) => (
-                <div key={s.label} className="pr-8 pl-8 first:pl-0 last:pr-0">
+                <div key={s.label} className="px-3 first:pl-0 last:pr-0 sm:px-8">
                   <p className="text-2xl font-extrabold text-white md:text-3xl">
                     <Counter value={s.value} suffix={s.suffix} />
                   </p>
-                  <p className="mt-1 text-xs uppercase tracking-widest text-slate-400">
+                  <p className="mt-1 text-[10px] uppercase tracking-wider text-slate-400 sm:text-xs sm:tracking-widest">
                     {s.label}
                   </p>
                 </div>
@@ -136,7 +136,7 @@ export default function HomePage() {
           </div>
 
           <div>
-            <h2 className="max-w-md overflow-hidden text-2xl font-bold text-white md:text-3xl">
+            <h2 className="mx-auto max-w-md overflow-hidden text-center text-2xl font-bold text-white md:text-3xl lg:mx-0 lg:text-left">
               <span
                 className="animate-rise"
                 style={{ animationDelay: "5150ms" }}
@@ -144,22 +144,22 @@ export default function HomePage() {
                 Quickly connect with the ideal umbrella company.
               </span>
             </h2>
-            <div className="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <div className="mx-auto mt-8 grid max-w-xl grid-cols-3 gap-3 sm:gap-4 lg:mx-0 lg:max-w-none lg:grid-cols-1 xl:grid-cols-3">
               {heroCards.map((card, i) => (
                 <div key={card.label} className="overflow-hidden rounded-tcb">
                   <div
-                    className="animate-rise h-full"
+                    className="animate-rise h-full w-full"
                     style={{ animationDelay: `${5350 + i * 150}ms` }}
                   >
-                    <div className="shine group relative flex h-full flex-col items-center gap-3 rounded-tcb border border-white/40 bg-white/5 px-6 py-7 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-brand-light hover:bg-white/15 hover:shadow-xl hover:shadow-brand/20">
+                    <div className="shine group relative flex h-full flex-col items-center gap-3 rounded-tcb border border-white/40 bg-white/5 px-2 py-5 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-brand-light hover:bg-white/15 hover:shadow-xl hover:shadow-brand/20 sm:px-6 sm:py-7">
                       <Image
                         src={card.icon}
                         alt=""
                         width={36}
                         height={36}
-                        className="h-9 w-9 invert transition-transform duration-300 group-hover:scale-110"
+                        className="h-8 w-8 invert transition-transform duration-300 group-hover:scale-110 sm:h-9 sm:w-9"
                       />
-                      <span className="text-sm font-semibold uppercase tracking-wide text-white">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-white sm:text-sm">
                         {card.label}
                       </span>
                     </div>
@@ -183,14 +183,14 @@ export default function HomePage() {
               title="Committed to Supporting Your Needs"
               description="Discover how we simplify contractor payments, ensure full compliance with IR35, and provide expert payroll support. With a commitment to transparency and efficiency, we help contractors and businesses focus on success while we handle the rest."
             />
-            <blockquote className="mt-6 border-l-4 border-brand pl-4 font-medium italic text-ink">
+            <blockquote className="mx-auto mt-6 max-w-2xl text-center font-medium italic text-ink lg:mx-0 lg:border-l-4 lg:border-brand lg:pl-4 lg:text-left">
               “Success is not the key to happiness. Happiness is the key to
               success. If you love what you do, you will succeed.”
               <span className="mt-1 block text-sm not-italic text-muted">
                 – Albert Schweitzer
               </span>
             </blockquote>
-            <div className="mt-8 flex flex-wrap items-center gap-8">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-8 text-center lg:justify-start lg:text-left">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted">
                   Need help
@@ -275,16 +275,16 @@ export default function HomePage() {
 
         <div className="relative mx-auto max-w-site px-6 pb-24 pt-16">
           <div className="grid items-start gap-8 lg:grid-cols-2">
-            <Reveal direction="left">
-              <p className="flex items-center gap-3 text-sm font-medium uppercase tracking-wide text-brand">
+            <Reveal direction="left" className="text-center lg:text-left">
+              <p className="flex items-center justify-center gap-3 text-sm font-medium uppercase tracking-wide text-brand lg:justify-start">
                 Our Services
                 <span className="h-px w-8 bg-brand" />
               </p>
-              <h2 className="mt-2 max-w-lg text-3xl font-bold capitalize leading-tight text-slate-600 md:text-4xl">
+              <h2 className="mx-auto mt-2 max-w-lg text-3xl font-bold capitalize leading-tight text-slate-600 md:text-4xl lg:mx-0">
                 Tailored solutions to meet your needs.
               </h2>
               <svg
-                className="mt-3 h-3 w-16 text-brand"
+                className="mx-auto mt-3 h-3 w-16 text-brand lg:mx-0"
                 viewBox="0 0 64 12"
                 fill="none"
                 aria-hidden="true"
@@ -297,8 +297,8 @@ export default function HomePage() {
                 />
               </svg>
             </Reveal>
-            <Reveal direction="right" delay={150} className="lg:pl-16 lg:pt-4">
-              <p className="max-w-sm text-sm leading-relaxed text-slate-600">
+            <Reveal direction="right" delay={150} className="text-center lg:pl-16 lg:pt-4 lg:text-left">
+              <p className="mx-auto max-w-sm text-sm leading-relaxed text-slate-600 lg:mx-0">
                 Here are just a few of the expert services we offer, tailored
                 to meet your unique needs and requirements.
               </p>
@@ -319,14 +319,14 @@ export default function HomePage() {
               <Reveal key={s.title} delay={i * 100} className="h-full">
                 <Link
                   href="/services"
-                  className="group block h-full rounded-tcb border border-dashed border-slate-300 bg-white px-7 py-9 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-900/10"
+                  className="group block h-full rounded-tcb border border-dashed border-slate-300 bg-white px-7 py-9 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-900/10 sm:text-left"
                 >
                   <Image
                     src={s.icon}
                     alt=""
                     width={48}
                     height={48}
-                    className="h-12 w-12 transition-transform duration-300 group-hover:scale-110"
+                    className="mx-auto h-12 w-12 transition-transform duration-300 group-hover:scale-110 sm:mx-0"
                   />
                   <h3 className="mt-5 text-lg font-semibold capitalize leading-snug text-brand">
                     {s.title}

@@ -56,12 +56,14 @@ export default function AboutPage() {
               description="Delivering tailored solutions with innovation and expertise, designed to meet the unique needs of our clients."
             />
           </div>
+          <div className="mt-8 text-center lg:text-left">
           <Link
             href="/services"
-            className="mt-8 inline-block rounded-full bg-brand px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-brand-dark"
+            className="inline-block rounded-full bg-brand px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-brand-dark"
           >
             Learn More
           </Link>
+          </div>
         </div>
       </section>
 
@@ -75,7 +77,7 @@ export default function AboutPage() {
           {audiences.map((a) => (
             <div
               key={a}
-              className="flex items-center gap-4 rounded-tcb border border-slate-200 bg-white p-6 transition-colors hover:border-brand"
+              className="flex items-center justify-center gap-4 rounded-tcb border border-slate-200 bg-white p-6 transition-colors hover:border-brand sm:justify-start"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white">
                 ✓

@@ -37,6 +37,7 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState<"services" | "industries" | null>(null);
+  const [mobileSub, setMobileSub] = useState<"services" | "industries" | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -75,8 +76,8 @@ export default function Header() {
           scrolled ? "max-h-0" : "max-h-10"
         }`}
       >
-        <div className="mx-auto flex h-10 max-w-site items-center justify-between px-4 text-xs text-slate-300">
-          <p className="flex items-center gap-2">
+        <div className="mx-auto flex h-10 max-w-site items-center justify-center px-4 text-[11px] text-slate-300 sm:justify-between sm:text-xs">
+          <p className="flex items-center gap-2 whitespace-nowrap">
             <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-brand to-orange-400" />
             Free umbrella company comparison — no fees, no obligation
           </p>
@@ -109,10 +110,10 @@ export default function Header() {
           }`}
         >
           <div
-            className={`relative flex items-center justify-between rounded-full px-5 py-2.5 transition-all duration-300 ${
+            className={`relative flex items-center justify-between rounded-full px-5 transition-all duration-500 ${
               scrolled || open
-                ? "bg-white/90 backdrop-blur-xl"
-                : "bg-white/75 backdrop-blur-md"
+                ? "bg-white/90 py-2.5 backdrop-blur-xl"
+                : "bg-white/75 py-2.5 backdrop-blur-md lg:px-10 lg:py-5"
             }`}
           >
             <Link
@@ -126,7 +127,9 @@ export default function Header() {
                 alt="The Contractor Broker"
                 width={300}
                 height={90}
-                className="h-9 w-auto transition-transform duration-300 hover:scale-105"
+                className={`w-auto transition-all duration-500 hover:scale-105 ${
+                  scrolled || open ? "h-9" : "h-9 lg:h-20 xl:h-24"
+                }`}
                 priority
               />
             </Link>
@@ -270,21 +273,83 @@ export default function Header() {
         </div>
 
         {open && (
-          <nav className="mt-2 rounded-tcb border border-slate-200 bg-white/95 shadow-xl backdrop-blur-xl lg:hidden">
+          <nav className="mt-2 max-h-[calc(100dvh-6.5rem)] overflow-y-auto overscroll-contain rounded-tcb border border-slate-200 bg-white/95 shadow-xl backdrop-blur-xl lg:hidden">
             <ul className="px-5 py-3">
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    onClick={() => setOpen(false)}
-                    className={`block border-b border-slate-100 py-3 text-sm font-medium transition-colors last:border-0 ${
-                      pathname === link.href ? "text-brand" : "text-ink/70 hover:text-brand"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              {navLinks.map((link) => {
+                const sub =
+                  link.href === "/services"
+                    ? {
+                        key: "services" as const,
+                        items: featuredServices.map((s) => ({
+                          label: s.title,
+                          href: `/services#${slugify(s.title)}`,
+                        })),
+                        all: { label: "View all 20 services →", href: "/services" },
+                      }
+                    : link.href === "/industries"
+                      ? {
+                          key: "industries" as const,
+                          items: industries.map((ind) => ({
+                            label: ind.title,
+                            href: `/industries#${slugify(ind.title)}`,
+                          })),
+                          all: { label: "View all industries →", href: "/industries" },
+                        }
+                      : null;
+                const expanded = sub !== null && mobileSub === sub.key;
+                return (
+                  <li key={link.href} className="border-b border-slate-100 last:border-0">
+                    <div className="flex items-center justify-between">
+                      <Link
+                        href={link.href}
+                        onClick={() => setOpen(false)}
+                        className={`block flex-1 py-3 text-sm font-medium transition-colors ${
+                          pathname === link.href ? "text-brand" : "text-ink/70 hover:text-brand"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                      {sub && (
+                        <button
+                          type="button"
+                          aria-label={`${expanded ? "Hide" : "Show"} ${link.label}`}
+                          aria-expanded={expanded}
+                          onClick={() => setMobileSub(expanded ? null : sub.key)}
+                          className={`-mr-2 flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                            expanded ? "bg-brand/10 text-brand" : "text-ink/60"
+                          }`}
+                        >
+                          <Chevron open={expanded} />
+                        </button>
+                      )}
+                    </div>
+                    {sub && (
+                      <div
+                        className={`grid transition-all duration-300 ease-out ${
+                          expanded ? "grid-rows-[1fr] pb-3" : "grid-rows-[0fr]"
+                        }`}
+                      >
+                        <ul className="space-y-0.5 overflow-hidden border-l-2 border-brand/20 pl-4">
+                          {[...sub.items, sub.all].map((item) => (
+                            <li key={item.href}>
+                              <Link
+                                href={item.href}
+                                onClick={() => setOpen(false)}
+                                tabIndex={expanded ? undefined : -1}
+                                className={`block py-1.5 text-[13px] transition-colors hover:text-brand ${
+                                  item === sub.all ? "font-semibold text-brand" : "text-ink/60"
+                                }`}
+                              >
+                                {item.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
               <li className="pt-3">
                 <a
                   href={site.phoneHref}

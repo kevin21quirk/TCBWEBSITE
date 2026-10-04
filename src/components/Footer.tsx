@@ -14,14 +14,14 @@ const footerServices = [
 export default function Footer() {
   return (
     <footer className="bg-ink text-white">
-      <div className="mx-auto grid max-w-site gap-12 px-6 py-16 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-site gap-12 px-6 py-16 text-center md:grid-cols-2 md:text-left lg:grid-cols-4">
         <div>
           <h3 className="mb-4 text-lg font-semibold">About Us</h3>
           <p className="text-sm leading-relaxed text-slate-300">
             At The Contractor Broker, we simplify contractor payments and ensure
             full compliance with expert support and reliable services.
           </p>
-          <div className="mt-5 flex gap-3">
+          <div className="mt-5 flex justify-center gap-3 md:justify-start">
             {socials.map((s) => (
               <a
                 key={s.label}
@@ -85,7 +85,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-site flex-col items-center justify-between gap-3 px-6 py-5 text-xs text-slate-400 sm:flex-row">
+        <div className="mx-auto flex max-w-site flex-col items-center justify-between gap-3 px-6 py-5 text-center text-xs text-slate-400 sm:flex-row sm:text-left">
           <p>
             Copyright © {new Date().getFullYear()} {site.name}. All rights
             reserved.

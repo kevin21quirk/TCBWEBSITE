@@ -50,7 +50,7 @@ export default function Testimonials() {
                 onClick={() => setIndex(i)}
                 aria-label={`Show testimonial from ${t.name}`}
                 aria-current={active}
-                className={`relative shrink-0 rounded-tcb border p-6 text-left transition-all duration-700 ease-out ${
+                className={`relative shrink-0 rounded-tcb border p-6 text-center transition-all sm:text-left duration-700 ease-out ${
                   active
                     ? "scale-100 border-brand/40 bg-white opacity-100 shadow-2xl shadow-brand/15"
                     : "scale-[0.88] border-slate-200 bg-white/70 opacity-50 shadow-sm hover:opacity-80"
@@ -67,7 +67,7 @@ export default function Testimonials() {
                   alt={t.name}
                   width={56}
                   height={56}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-brand/20"
+                  className="mx-auto h-14 w-14 rounded-full object-cover ring-2 ring-brand/20 sm:mx-0"
                 />
                 <div className="mt-3 text-sm tracking-widest text-brand">
                   ★★★★★

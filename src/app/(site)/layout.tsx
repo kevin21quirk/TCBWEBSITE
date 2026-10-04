@@ -9,7 +9,9 @@ export default function SiteLayout({
   return (
     <>
       <Header />
-      <main>{children}</main>
+      {/* clip (not hidden) so off-screen reveal start positions can't widen
+          the page on mobile, without breaking position: sticky */}
+      <main className="overflow-x-clip">{children}</main>
       <Footer />
     </>
   );
