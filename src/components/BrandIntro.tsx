@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -62,14 +63,37 @@ export default function BrandIntro() {
       className="brand-intro-root pointer-events-none fixed inset-0 z-[60] flex items-center justify-center"
       aria-hidden="true"
     >
-      <div ref={lockupRef} className="brand-lockup text-center">
-        <div className="flex items-baseline justify-center gap-4 text-xl font-extrabold tracking-[0.15em] text-slate-900 md:text-3xl">
-          <span className="brand-word-left">THE</span>
-          <span className="brand-word-right">CONTRACTOR</span>
-        </div>
-        <div className="brand-word-up mt-3 text-6xl font-extrabold leading-none tracking-tight text-brand md:text-8xl">
-          BROKER
-        </div>
+      <div
+        ref={lockupRef}
+        className="brand-lockup relative aspect-[10/3] w-[min(80vw,24rem)]"
+      >
+        <Image
+          src="/images/tcb-logo-2.png"
+          alt=""
+          fill
+          sizes="(min-width: 768px) 384px, 80vw"
+          priority
+          className="brand-word-left"
+          style={{ clipPath: "inset(0% 78% 66% 0%)" }}
+        />
+        <Image
+          src="/images/tcb-logo-2.png"
+          alt=""
+          fill
+          sizes="(min-width: 768px) 384px, 80vw"
+          priority
+          className="brand-word-right"
+          style={{ clipPath: "inset(0% 0% 66% 22%)" }}
+        />
+        <Image
+          src="/images/tcb-logo-2.png"
+          alt=""
+          fill
+          sizes="(min-width: 768px) 384px, 80vw"
+          priority
+          className="brand-word-up"
+          style={{ clipPath: "inset(35% 0% 0% 0%)" }}
+        />
       </div>
     </div>
   );

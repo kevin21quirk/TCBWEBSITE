@@ -43,7 +43,7 @@ export const homeServices = [
     title: "Tax Compliance and IR35 Advice",
     description:
       "Ensuring full compliance with tax laws and IR35 regulations, safeguarding contractors against any potential tax liabilities.",
-    icon: "/images/iconmonstr-clipboard-6-240.png",
+    icon: "/images/iconmonstr-school-26-240.png",
   },
   {
     title: "Payroll Management",
@@ -55,13 +55,13 @@ export const homeServices = [
     title: "Pension and Benefits Administration",
     description:
       "Providing pension schemes and offering other employee benefits to contractors, ensuring they are supported in their financial planning.",
-    icon: "/images/iconmonstr-check-mark-circle-lined-240.png",
+    icon: "/images/iconmonstr-user-24-240.png",
   },
   {
     title: "Contractor Support and Advice",
     description:
       "Offering expert support to contractors, providing guidance on tax, IR35, and general compliance matters to help them make informed decisions.",
-    icon: "/images/iconmonstr-user-24-240.png",
+    icon: "/images/iconmonstr-info-lined-240.png",
   },
 ];
 

@@ -10,7 +10,6 @@ import Reveal from "@/components/Reveal";
 import RotatingWord from "@/components/RotatingWord";
 import ScrollStory from "@/components/ScrollStory";
 import SectionHeading from "@/components/SectionHeading";
-import Spotlight from "@/components/Spotlight";
 import Testimonials from "@/components/Testimonials";
 import Ticker from "@/components/Ticker";
 import Tilt from "@/components/Tilt";
@@ -140,7 +139,7 @@ export default function HomePage() {
             <h2 className="max-w-md overflow-hidden text-2xl font-bold text-white md:text-3xl">
               <span
                 className="animate-rise"
-                style={{ animationDelay: "4750ms" }}
+                style={{ animationDelay: "5150ms" }}
               >
                 Quickly connect with the ideal umbrella company.
               </span>
@@ -150,7 +149,7 @@ export default function HomePage() {
                 <div key={card.label} className="overflow-hidden rounded-tcb">
                   <div
                     className="animate-rise h-full"
-                    style={{ animationDelay: `${4950 + i * 150}ms` }}
+                    style={{ animationDelay: `${5350 + i * 150}ms` }}
                   >
                     <div className="shine group relative flex h-full flex-col items-center gap-3 rounded-tcb border border-white/40 bg-white/5 px-6 py-7 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-brand-light hover:bg-white/15 hover:shadow-xl hover:shadow-brand/20">
                       <Image
@@ -263,90 +262,82 @@ export default function HomePage() {
       {/* What to do next — pinned scroll story */}
       <ScrollStory />
 
-      {/* Services — bento */}
-      <section className="relative mx-auto max-w-site overflow-visible px-6 py-24">
-        <span
-          className="text-stroke pointer-events-none absolute -top-4 left-0 select-none text-[8rem] font-extrabold uppercase leading-none tracking-tight opacity-60 md:text-[10rem]"
+      {/* Services */}
+      <section className="relative overflow-hidden">
+        {/* grey band with arch + circle */}
+        <div
+          className="absolute inset-x-0 top-0 h-[78%] overflow-hidden bg-[#c5ccd3]"
           aria-hidden="true"
         >
-          Expert
-        </span>
-        <Reveal>
-          <SectionHeading
-            eyebrow="Our Services"
-            title="Tailored solutions to meet your needs."
-            description="Here are just a few of the expert services we offer, tailored to meet your unique needs and requirements."
-          />
-        </Reveal>
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {homeServices.map((s, i) => (
-            <Reveal
-              key={s.title}
-              delay={i * 100}
-              direction={i % 2 === 0 ? "left" : "right"}
-              className={`h-full ${
-                i === 0
-                  ? "sm:col-span-2 lg:col-span-2 lg:row-span-2"
-                  : i === homeServices.length - 1
-                    ? "sm:col-span-2 lg:col-span-2"
-                    : ""
-              }`}
-            >
-              <Tilt max={6} className="h-full">
-                <Spotlight
-                  className={`group relative h-full overflow-hidden rounded-tcb border border-slate-200 bg-white p-8 transition-all duration-300 hover:-translate-y-2 hover:border-transparent hover:shadow-2xl hover:shadow-brand/15 ${
-                    i === 0 ? "bg-gradient-to-br from-white to-red-50" : ""
-                  }`}
+          <div className="absolute left-1/2 top-[18%] h-[160%] w-[70%] rounded-t-full bg-[#f1f2f4]" />
+          <div className="absolute left-[27%] top-[22%] h-24 w-24 rounded-full bg-[#f1f2f4] md:h-28 md:w-28" />
+        </div>
+
+        <div className="relative mx-auto max-w-site px-6 pb-24 pt-16">
+          <div className="grid items-start gap-8 lg:grid-cols-2">
+            <Reveal direction="left">
+              <p className="flex items-center gap-3 text-sm font-medium uppercase tracking-wide text-brand">
+                Our Services
+                <span className="h-px w-8 bg-brand" />
+              </p>
+              <h2 className="mt-2 max-w-lg text-3xl font-bold capitalize leading-tight text-slate-600 md:text-4xl">
+                Tailored solutions to meet your needs.
+              </h2>
+              <svg
+                className="mt-3 h-3 w-16 text-brand"
+                viewBox="0 0 64 12"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M1 6c3.5-5 7-5 10.5 0s7 5 10.5 0 7-5 10.5 0 7 5 10.5 0 7-5 10.5 0 7 5 10.5 0"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </Reveal>
+            <Reveal direction="right" delay={150} className="lg:pl-16 lg:pt-4">
+              <p className="max-w-sm text-sm leading-relaxed text-slate-600">
+                Here are just a few of the expert services we offer, tailored
+                to meet your unique needs and requirements.
+              </p>
+              <Magnetic>
+                <Link
+                  href="/services"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold uppercase text-white transition-colors duration-300 hover:bg-brand-dark"
                 >
-                  <div
-                    className="absolute inset-x-0 top-0 z-[2] h-1 origin-left scale-x-0 bg-gradient-to-r from-brand to-orange-400 transition-transform duration-300 group-hover:scale-x-100"
-                    aria-hidden="true"
+                  More Services
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </Magnetic>
+            </Reveal>
+          </div>
+
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {homeServices.map((s, i) => (
+              <Reveal key={s.title} delay={i * 100} className="h-full">
+                <Link
+                  href="/services"
+                  className="group block h-full rounded-tcb border border-dashed border-slate-300 bg-white px-7 py-9 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-900/10"
+                >
+                  <Image
+                    src={s.icon}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 transition-transform duration-300 group-hover:scale-110"
                   />
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 transition-colors duration-300 group-hover:bg-brand">
-                    <Image
-                      src={s.icon}
-                      alt=""
-                      width={40}
-                      height={40}
-                      className="h-9 w-9 transition duration-300 group-hover:invert"
-                    />
-                  </div>
-                  <h3
-                    className={`mt-5 font-semibold text-ink transition-colors duration-300 group-hover:text-brand ${
-                      i === 0 ? "text-2xl" : "text-lg"
-                    }`}
-                  >
+                  <h3 className="mt-5 text-lg font-semibold capitalize leading-snug text-brand">
                     {s.title}
                   </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-muted">
+                  <p className="mt-5 text-sm leading-relaxed text-slate-500">
                     {s.description}
                   </p>
-                  <div className="grid grid-rows-[0fr] transition-all duration-500 ease-out group-hover:grid-rows-[1fr]">
-                    <div className="overflow-hidden">
-                      <Link
-                        href="/services"
-                        className="mt-4 inline-flex translate-y-2 items-center gap-2 text-sm font-semibold text-brand opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100"
-                      >
-                        Explore this service
-                        <span aria-hidden="true">→</span>
-                      </Link>
-                    </div>
-                  </div>
-                </Spotlight>
-              </Tilt>
-            </Reveal>
-          ))}
-        </div>
-        <div className="mt-12 text-center">
-          <Magnetic>
-            <Link
-              href="/services"
-              className="group relative inline-block overflow-hidden rounded-full bg-gradient-to-r from-brand to-brand-light px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-brand/30"
-            >
-              <span className="relative z-10">More Services</span>
-              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
-            </Link>
-          </Magnetic>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 

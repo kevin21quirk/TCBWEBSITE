@@ -62,7 +62,7 @@ export default function ScrollStory() {
   const active = Math.round(t);
 
   return (
-    <section ref={sectionRef} className="relative bg-ink" style={{ height: "320vh" }}>
+    <section ref={sectionRef} className="relative bg-ink" style={{ height: "260vh" }}>
       <div className="relative sticky top-0 flex h-screen items-center overflow-hidden">
         {/* ambient */}
         <div
@@ -89,7 +89,7 @@ export default function ScrollStory() {
 
         {/* progress rail */}
         <div className="absolute left-6 top-1/2 hidden -translate-y-1/2 md:left-12 lg:block">
-          <div className="relative h-36 w-px bg-white/15">
+          <div className="relative h-72 w-px bg-white/15">
             <div
               className="absolute left-0 top-0 w-px bg-gradient-to-b from-brand to-orange-400 transition-[height] duration-100"
               style={{ height: `${progress * 100}%` }}
@@ -128,7 +128,7 @@ export default function ScrollStory() {
               key={s.step}
               className="absolute inset-0 flex items-center justify-center px-6"
               style={{
-                transform: `translateY(${off * 105}%)`,
+                transform: `translateY(${off * 70}%)`,
                 opacity,
               }}
               aria-hidden={active !== i}
