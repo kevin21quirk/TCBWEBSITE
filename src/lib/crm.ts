@@ -53,6 +53,7 @@ export type Lead = {
   email: string | null;
   phone: string | null;
   company: string | null;
+  linkedin_url: string | null;
   message: string | null;
   source: string;
   status: LeadStatus;

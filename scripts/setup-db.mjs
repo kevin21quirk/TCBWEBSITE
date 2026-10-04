@@ -48,6 +48,30 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS leads_status_idx ON leads(status)`,
   `CREATE INDEX IF NOT EXISTS leads_assigned_idx ON leads(assigned_to)`,
   `CREATE INDEX IF NOT EXISTS lead_activities_lead_idx ON lead_activities(lead_id)`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS linkedin_url TEXT`,
+  `CREATE TABLE IF NOT EXISTS visitors (
+    id SERIAL PRIMARY KEY,
+    ip TEXT UNIQUE NOT NULL,
+    user_agent TEXT,
+    country TEXT,
+    region TEXT,
+    city TEXT,
+    isp TEXT,
+    geo_checked BOOLEAN NOT NULL DEFAULT false,
+    visit_count INT NOT NULL DEFAULT 0,
+    first_seen TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_seen TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS page_views (
+    id SERIAL PRIMARY KEY,
+    visitor_id INT NOT NULL REFERENCES visitors(id) ON DELETE CASCADE,
+    path TEXT NOT NULL,
+    referrer TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS page_views_visitor_idx ON page_views(visitor_id)`,
+  `CREATE INDEX IF NOT EXISTS page_views_created_idx ON page_views(created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS visitors_last_seen_idx ON visitors(last_seen DESC)`,
 ];
 
 for (const s of statements) {

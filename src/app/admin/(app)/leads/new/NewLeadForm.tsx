@@ -24,9 +24,16 @@ export default function NewLeadForm() {
         <input name="email" type="email" placeholder="Email" className={inputClass} />
         <input name="phone" placeholder="Phone" className={inputClass} />
       </div>
+      <input
+        name="linkedin_url"
+        type="url"
+        placeholder="LinkedIn profile URL (https://www.linkedin.com/in/…)"
+        className={inputClass}
+      />
       <select name="source" defaultValue="manual" className={inputClass}>
         <option value="manual">Manual entry</option>
         <option value="phone">Phone enquiry</option>
+        <option value="linkedin">LinkedIn / Sales Navigator</option>
         <option value="referral">Referral</option>
         <option value="event">Event / expo</option>
         <option value="other">Other</option>

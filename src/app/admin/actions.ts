@@ -81,12 +81,14 @@ export async function createLead(
   const email = String(formData.get("email") ?? "").trim() || null;
   const phone = String(formData.get("phone") ?? "").trim() || null;
   const company = String(formData.get("company") ?? "").trim() || null;
+  const linkedinUrl =
+    String(formData.get("linkedin_url") ?? "").trim() || null;
   const message = String(formData.get("message") ?? "").trim() || null;
   const source = String(formData.get("source") ?? "manual").trim() || "manual";
 
   const rows = await sql`
-    INSERT INTO leads (name, email, phone, company, message, source)
-    VALUES (${name}, ${email}, ${phone}, ${company}, ${message}, ${source})
+    INSERT INTO leads (name, email, phone, company, linkedin_url, message, source)
+    VALUES (${name}, ${email}, ${phone}, ${company}, ${linkedinUrl}, ${message}, ${source})
     RETURNING id`;
   revalidatePath("/admin/leads");
   redirect(`/admin/leads/${rows[0].id}`);

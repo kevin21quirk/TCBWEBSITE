@@ -82,6 +82,51 @@ export default async function LeadDetailPage({
                 </div>
               ))}
             </dl>
+
+            {/* LinkedIn / Sales Navigator */}
+            <div className="mt-6">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                LinkedIn
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3">
+                {lead.linkedin_url && (
+                  <a
+                    href={lead.linkedin_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl bg-[#0a66c2] px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#004182]"
+                  >
+                    View LinkedIn Profile
+                  </a>
+                )}
+                <a
+                  href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
+                    [lead.name, lead.company].filter(Boolean).join(" ")
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-ink transition-colors hover:border-[#0a66c2] hover:text-[#0a66c2]"
+                >
+                  Search on LinkedIn
+                </a>
+                <a
+                  href={`https://www.linkedin.com/sales/search/people?query=(keywords:${encodeURIComponent(
+                    [lead.name, lead.company].filter(Boolean).join(" ")
+                  )})`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-ink transition-colors hover:border-[#0a66c2] hover:text-[#0a66c2]"
+                >
+                  Search in Sales Navigator
+                </a>
+              </div>
+              {lead.linkedin_url && (
+                <p className="mt-2 truncate text-xs text-slate-400">
+                  {lead.linkedin_url}
+                </p>
+              )}
+            </div>
+
             {lead.message && (
               <div className="mt-6">
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
