@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 export default function Reveal({
   children,
+  id,
   className = "",
   delay = 0,
   direction = "up",
 }: {
   children: React.ReactNode;
+  id?: string;
   className?: string;
   delay?: number;
   direction?: "up" | "left" | "right" | "zoom" | "top";
@@ -33,7 +35,7 @@ export default function Reveal({
   }, []);
 
   return (
-    <div ref={ref} className={className}>
+    <div ref={ref} id={id} className={className}>
       {/* Inner element carries the transform — the observed outer wrapper
           stays at its true position so off-screen start offsets still trigger. */}
       <div

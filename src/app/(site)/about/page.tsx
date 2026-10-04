@@ -20,7 +20,7 @@ const highlights = [
 export default function AboutPage() {
   return (
     <>
-      <PageHero eyebrow="About Us" title="About Us" />
+      <PageHero title="About Us" image="/images/download-40.webp" centered />
 
       {/* Highlights */}
       <section className="mx-auto max-w-site px-6 py-20">

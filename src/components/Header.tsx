@@ -4,7 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { allServices, industries, navLinks, site } from "@/lib/content";
+import {
+  allServices,
+  industries,
+  navLinks,
+  site,
+  slugify,
+} from "@/lib/content";
 
 const featuredServices = allServices.slice(0, 6);
 
@@ -168,7 +174,7 @@ export default function Header() {
                                 {featuredServices.map((s) => (
                                   <Link
                                     key={s.title}
-                                    href="/services"
+                                    href={`/services#${slugify(s.title)}`}
                                     onClick={() => setMenu(null)}
                                     className="group/item rounded-xl p-3 transition-colors duration-200 hover:bg-brand/[0.06]"
                                   >
@@ -197,7 +203,7 @@ export default function Header() {
                                 {industries.map((ind) => (
                                   <Link
                                     key={ind.title}
-                                    href="/industries"
+                                    href={`/industries#${slugify(ind.title)}`}
                                     onClick={() => setMenu(null)}
                                     className="group/item relative overflow-hidden rounded-xl"
                                   >

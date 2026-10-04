@@ -65,6 +65,12 @@ export const homeServices = [
   },
 ];
 
+export const slugify = (title: string) =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
 export const allServices = [
   {
     title: "Umbrella Company Comparison",

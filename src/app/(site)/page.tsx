@@ -35,12 +35,12 @@ export default function HomePage() {
       <section className="relative overflow-hidden rounded-b-[32px] border-b-4 border-brand">
         <HeroShutter />
         <BrandIntro />
-        <Parallax
-          speed={0.25}
-          className="absolute -inset-y-[40%] inset-x-0 bg-cover bg-center"
+        <div
+          className="absolute inset-0 bg-cover bg-center md:bg-fixed"
           style={{
             backgroundImage: "url(/images/two-people-in-a-room.webp)",
           }}
+          aria-hidden="true"
         />
         <div
           className="absolute inset-0 bg-gradient-to-b from-ink/60 via-slate-900/30 to-ink/70"

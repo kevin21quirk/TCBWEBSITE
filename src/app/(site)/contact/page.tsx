@@ -13,11 +13,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <>
-      <PageHero
-        eyebrow="Contact Us"
-        title="Get in Touch with Us Today"
-        description="Our team is here to answer your questions and support your contracting needs."
-      />
+      <PageHero title="Contact Us" image="/images/download-42.webp" centered />
 
       <section className="mx-auto max-w-site px-6 py-20">
         <div className="grid gap-12 lg:grid-cols-[360px_1fr]">

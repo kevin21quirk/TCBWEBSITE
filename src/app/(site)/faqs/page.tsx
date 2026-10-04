@@ -15,11 +15,7 @@ export const metadata: Metadata = {
 export default function FaqsPage() {
   return (
     <>
-      <PageHero
-        eyebrow="FAQs"
-        title="Frequently Asked Questions"
-        description="Benefits of using an umbrella company — and how The Contractor Broker helps you find the right one."
-      />
+      <PageHero title="FAQs" image="/images/download-43.webp" centered />
 
       <section className="mx-auto max-w-site px-6 py-20">
         <div className="grid items-start gap-12 lg:grid-cols-[1fr_360px]">
