@@ -26,6 +26,13 @@ const items = [
     ),
   },
   {
+    href: "/admin/radar",
+    label: "Lead Radar",
+    icon: (
+      <path d="M12 2a10 10 0 1 0 9.54 7h-2.06A8 8 0 1 1 12 4V2zm0 4a6 6 0 1 0 5.66 4H12V6zm0 3a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
+    ),
+  },
+  {
     href: "/admin/prospecting",
     label: "LinkedIn Prospecting",
     icon: (

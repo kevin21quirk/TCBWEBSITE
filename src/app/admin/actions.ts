@@ -318,6 +318,36 @@ export async function createLead(
   redirect(`/admin/leads/${rows[0].id}`);
 }
 
+/** Import a Companies House prospect from the Lead Radar as a CRM lead. */
+export async function addProspect(formData: FormData) {
+  const user = await requireUser();
+  const company = str(formData, "company").slice(0, 200);
+  const number = str(formData, "company_number").slice(0, 20);
+  const detail = str(formData, "detail").slice(0, 2000);
+  const returnTo = str(formData, "return") || "/admin/radar";
+  if (!company) redirect(returnTo);
+
+  const dup = await sql`
+    SELECT id FROM leads WHERE lower(company) = lower(${company}) LIMIT 1`;
+  if (dup.length === 0) {
+    const rows = await sql`
+      INSERT INTO leads (name, company, message, source, assigned_to, tags)
+      VALUES (${company}, ${company}, ${`Lead Radar prospect — Companies House ${number}. ${detail}`},
+              'lead radar', ${user.id}, ${["agency", "lead-radar"]}::text[])
+      RETURNING id`;
+    await sql`
+      INSERT INTO follow_ups (lead_id, assigned_to, title, due_at, auto)
+      VALUES (${rows[0].id}, ${user.id}, 'First outreach to ${company.slice(0, 100)}', now() + interval '1 day', true)`;
+    await sql`
+      INSERT INTO lead_activities (lead_id, user_id, type, body)
+      VALUES (${rows[0].id}, ${user.id}, 'update', ${`Imported from Lead Radar (Companies House ${number})`})`;
+    revalidatePath("/admin/leads");
+    revalidatePath("/admin/prospecting");
+    revalidatePath("/admin/calendar");
+  }
+  redirect(returnTo);
+}
+
 export async function deleteLead(leadId: number) {
   await requireSuperAdmin();
   await sql`DELETE FROM leads WHERE id = ${leadId}`;
