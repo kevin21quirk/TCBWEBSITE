@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import CtaBand from "@/components/CtaBand";
+import Jurisdictions from "@/components/Jurisdictions";
 import PageHero from "@/components/PageHero";
 import SectionHeading from "@/components/SectionHeading";
 import { audiences } from "@/lib/content";
@@ -66,6 +67,8 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      <Jurisdictions />
 
       {/* Who we work with */}
       <section className="mx-auto max-w-site px-6 py-20">

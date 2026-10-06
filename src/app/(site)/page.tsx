@@ -4,6 +4,7 @@ import Counter from "@/components/Counter";
 import CtaBand from "@/components/CtaBand";
 import BrandIntro from "@/components/BrandIntro";
 import HeroShutter from "@/components/HeroShutter";
+import Jurisdictions from "@/components/Jurisdictions";
 import Magnetic from "@/components/Magnetic";
 import Parallax from "@/components/Parallax";
 import Reveal from "@/components/Reveal";
@@ -64,7 +65,7 @@ export default function HomePage() {
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur-md">
               <span className="animate-pulse-dot h-2 w-2 rounded-full bg-brand-light" />
-              UK Umbrella Company Broker
+              UK &amp; Isle of Man Umbrella Broker
             </div>
             <h1 className="mt-6 text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-6xl">
               <span className="inline-block overflow-hidden align-bottom">
@@ -357,6 +358,9 @@ export default function HomePage() {
           ))}
         </div>
       </div>
+
+      {/* UK & Isle of Man coverage */}
+      <Jurisdictions />
 
       {/* Testimonials */}
       <section className="relative overflow-hidden bg-slate-50 py-24">
