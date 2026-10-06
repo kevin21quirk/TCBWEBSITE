@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import DeleteLeadButton from "@/app/admin/(app)/leads/[id]/DeleteLeadButton";
 import {
   addFollowUp,
   addNote,
@@ -7,6 +8,7 @@ import {
   completeFollowUp,
   updateLeadStatus,
 } from "@/app/admin/actions";
+import { requireUser } from "@/lib/auth";
 import {
   LEAD_STATUSES,
   STATUS_STYLES,
@@ -38,6 +40,7 @@ export default async function LeadDetailPage({
   const { id } = await params;
   const leadId = parseInt(id, 10);
   if (Number.isNaN(leadId)) notFound();
+  const me = await requireUser();
 
   const [leads, staff, activity, followUps] = await Promise.all([
     sql`SELECT l.*, u.name AS assignee_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id = ${leadId}`,
@@ -392,6 +395,10 @@ export default async function LeadDetailPage({
             >
               Email {lead.name.split(" ")[0]}
             </a>
+          )}
+
+          {me.role === "super_admin" && (
+            <DeleteLeadButton leadId={leadId} leadName={lead.name} />
           )}
         </div>
       </div>

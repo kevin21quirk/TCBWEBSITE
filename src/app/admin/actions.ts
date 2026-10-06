@@ -106,6 +106,15 @@ export async function createLead(
   redirect(`/admin/leads/${rows[0].id}`);
 }
 
+export async function deleteLead(leadId: number) {
+  await requireSuperAdmin();
+  await sql`DELETE FROM leads WHERE id = ${leadId}`;
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+  revalidatePath("/admin/calendar");
+  redirect("/admin/leads");
+}
+
 /* ---------- follow-ups ---------- */
 
 export async function addFollowUp(leadId: number, formData: FormData) {
