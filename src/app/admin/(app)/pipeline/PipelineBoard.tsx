@@ -35,15 +35,20 @@ export default function PipelineBoard({ cards }: { cards: BoardCard[] }) {
       state.map((c) => (c.id === id ? { ...c, status } : c))
   );
 
-  const drop = (status: LeadStatus) => {
-    setOver(null);
-    const card = optimistic.find((c) => c.id === dragId);
-    setDragId(null);
+  const moveCard = (id: number, status: LeadStatus) => {
+    const card = optimistic.find((c) => c.id === id);
     if (!card || card.status === status) return;
     startTransition(async () => {
-      move({ id: card.id, status });
-      await updateLeadStatus(card.id, status);
+      move({ id, status });
+      await updateLeadStatus(id, status);
     });
+  };
+
+  const drop = (status: LeadStatus) => {
+    setOver(null);
+    const id = dragId;
+    setDragId(null);
+    if (id != null) moveCard(id, status);
   };
 
   return (
@@ -124,6 +129,19 @@ export default function PipelineBoard({ cards }: { cards: BoardCard[] }) {
                       )}
                     </span>
                   </div>
+                  {/* touch fallback — drag & drop doesn't work on phones/tablets */}
+                  <select
+                    value={c.status}
+                    onChange={(e) => moveCard(c.id, e.target.value as LeadStatus)}
+                    aria-label={`Move ${c.name} to stage`}
+                    className="mt-3 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-semibold text-slate-600 focus:border-brand focus:outline-none lg:hidden"
+                  >
+                    {LEAD_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_STYLES[s].label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               ))}
               {col.length === 0 && (

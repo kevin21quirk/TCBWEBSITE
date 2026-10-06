@@ -134,7 +134,7 @@ export default async function ReportsPage({
         </div>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((x) => (
           <div key={x.label} className={card}>
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{x.label}</p>
@@ -144,7 +144,7 @@ export default async function ReportsPage({
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {/* funnel */}
         <div className={card}>
           <h2 className={h2}>Conversion Funnel</h2>
@@ -278,7 +278,7 @@ export default async function ReportsPage({
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {/* team */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-6 py-4">

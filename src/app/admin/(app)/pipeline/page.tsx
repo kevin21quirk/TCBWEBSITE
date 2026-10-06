@@ -85,7 +85,7 @@ export default async function PipelinePage({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           ["Open pipeline", money.format(openValue), `${open.length} open deals`],
           ["Weighted forecast", money.format(forecast), "Value × stage probability"],

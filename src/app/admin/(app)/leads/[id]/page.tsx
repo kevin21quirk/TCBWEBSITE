@@ -127,7 +127,7 @@ export default async function LeadDetailPage({
         ← Back to leads
       </Link>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
           {/* header */}
           <div className={cardClass}>
@@ -210,7 +210,7 @@ export default async function LeadDetailPage({
               )}
             </div>
 
-            <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <dl className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 ["Email", lead.email],
                 ["Phone", lead.phone],
@@ -252,7 +252,7 @@ export default async function LeadDetailPage({
               </summary>
               <form
                 action={updateLeadDetails.bind(null, leadId)}
-                className="grid gap-3 border-t border-slate-100 p-4 sm:grid-cols-2"
+                className="grid grid-cols-1 gap-3 border-t border-slate-100 p-4 sm:grid-cols-2"
               >
                 <input name="name" required defaultValue={lead.name} placeholder="Full name *" className={inputClass} />
                 <input name="email" type="email" defaultValue={lead.email ?? ""} placeholder="Email" className={inputClass} />
@@ -324,7 +324,7 @@ export default async function LeadDetailPage({
             </div>
             <form
               action={saveLinkedinProfile.bind(null, leadId)}
-              className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]"
+              className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]"
             >
               <input
                 name="linkedin_url"

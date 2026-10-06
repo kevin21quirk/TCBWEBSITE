@@ -110,6 +110,13 @@ export default async function CalendarPage({
     return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
   };
 
+  const dotFor = (f: Item) => {
+    if (f.done) return "bg-slate-300";
+    if (f.due_at < now.toISOString()) return "bg-red-500";
+    if (f.day === todayStr) return "bg-brand";
+    return "bg-sky-500";
+  };
+
   const listRow = (f: {
     id: number;
     title: string;
@@ -172,7 +179,7 @@ export default async function CalendarPage({
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* month grid */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2">
           <div className="border-b border-slate-100 px-6 py-4">
@@ -195,14 +202,14 @@ export default async function CalendarPage({
               return (
                 <div
                   key={i}
-                  className={`min-h-[104px] border-b border-r border-slate-100 p-1.5 [&:nth-child(7n)]:border-r-0 ${
+                  className={`min-h-[3.5rem] border-b border-r border-slate-100 p-1 sm:min-h-[104px] sm:p-1.5 [&:nth-child(7n)]:border-r-0 ${
                     dayStr === todayStr ? "bg-brand/[0.04]" : ""
                   } ${day ? "" : "bg-slate-50/40"}`}
                 >
                   {day && (
                     <>
                       <p
-                        className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                        className={`mb-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold sm:h-6 sm:w-6 sm:text-xs ${
                           dayStr === todayStr
                             ? "bg-brand text-white"
                             : "text-slate-500"
@@ -210,7 +217,28 @@ export default async function CalendarPage({
                       >
                         {day}
                       </p>
-                      <div className="space-y-1">
+                      {/* compact dots on small screens */}
+                      <div className="flex flex-wrap gap-1 px-0.5 sm:hidden">
+                        {dayLeads.map((l) => (
+                          <Link
+                            key={`lead-${l.id}`}
+                            href={`/admin/leads/${l.id}`}
+                            title={`New lead: ${l.name}`}
+                            aria-label={`New lead: ${l.name}`}
+                            className="h-2 w-2 rounded-full bg-emerald-500"
+                          />
+                        ))}
+                        {dayItems.map((f) => (
+                          <Link
+                            key={f.id}
+                            href={`/admin/leads/${f.lead_id}`}
+                            title={`${f.title} — ${f.lead_name}`}
+                            aria-label={`${f.title} — ${f.lead_name}`}
+                            className={`h-2 w-2 rounded-full ${dotFor(f)}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="hidden space-y-1 sm:block">
                         {dayLeads.map((l) => (
                           <Link
                             key={`lead-${l.id}`}

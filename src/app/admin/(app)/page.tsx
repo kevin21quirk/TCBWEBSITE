@@ -96,7 +96,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* stat cards */}
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((c) => (
           <div
             key={c.label}
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* sales snapshot */}
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {snapshot.map((s) => (
           <Link
             key={s.label}
@@ -138,7 +138,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
             🔥 Hottest Leads
           </h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {hot.slice(0, 4).map(({ lead, score, temperature }) => (
               <Link
                 key={lead.id}
@@ -199,7 +199,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* recent leads */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">

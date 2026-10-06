@@ -14,7 +14,7 @@ export default async function ImportPage() {
       >
         ← Back to leads
       </Link>
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
           <h1 className="text-2xl font-bold text-ink">Import Leads</h1>
           <p className="mb-6 mt-1 text-sm text-slate-500">

@@ -23,7 +23,7 @@ export default async function UsersPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink">Team</h1>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* users table */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2">
           <div className="border-b border-slate-100 px-6 py-4">

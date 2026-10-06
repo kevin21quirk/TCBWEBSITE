@@ -16,15 +16,15 @@ export default function NewLeadForm() {
           {state.error}
         </p>
       )}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <input name="name" required placeholder="Full name *" className={inputClass} />
         <input name="company" placeholder="Company" className={inputClass} />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <input name="email" type="email" placeholder="Email" className={inputClass} />
         <input name="phone" placeholder="Phone" className={inputClass} />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <input name="job_title" placeholder="Job title" className={inputClass} />
         <input
           name="deal_value"

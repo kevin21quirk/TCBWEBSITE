@@ -61,7 +61,7 @@ export default async function ProspectingPage() {
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
             Awaiting research
@@ -85,7 +85,7 @@ export default async function ProspectingPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2">
           <div className="border-b border-slate-100 px-6 py-4">
             <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
@@ -135,7 +135,7 @@ export default async function ProspectingPage() {
                   </div>
                   <form
                     action={saveLinkedinProfile.bind(null, l.id)}
-                    className="mt-3 grid gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]"
+                    className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]"
                   >
                     <input name="linkedin_url" required placeholder="Paste profile URL" className={inputClass} />
                     <input name="job_title" defaultValue={l.job_title ?? ""} placeholder="Job title" className={inputClass} />
