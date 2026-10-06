@@ -336,6 +336,45 @@ ${detailRows}
   };
 }
 
+/* ---------- one-to-one sales email sent from the CRM ---------- */
+
+export function salesEmail(opts: {
+  body: string;
+  origin: string;
+  senderName: string;
+  senderEmail: string;
+}) {
+  const paragraphs = opts.body
+    .trim()
+    .split(/\n{2,}/)
+    .map(
+      (p) =>
+        `<p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#334155;">${multiline(p)}</p>`
+    )
+    .join("");
+
+  const body = `${paragraphs}
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:12px;border-top:1px solid ${LINE};">
+<tr><td style="padding-top:16px;font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};">
+  <strong style="color:${INK};">${esc(opts.senderName)}</strong><br />
+  ${esc(site.name)}<br />
+  <a href="mailto:${esc(opts.senderEmail)}" style="color:${BRAND};text-decoration:none;">${esc(opts.senderEmail)}</a>
+  &nbsp;&middot;&nbsp;
+  <a href="${esc(site.phoneHref)}" style="color:${BRAND};text-decoration:none;">${esc(site.phone)}</a>
+</td></tr>
+</table>`;
+
+  return {
+    html: layout({
+      origin: opts.origin,
+      preheader: opts.body.replace(/\s+/g, " ").slice(0, 110),
+      body,
+      footerNote: `Sent by ${esc(opts.senderName)} at ${esc(site.name)}. Simply reply to this email to get in touch.`,
+    }),
+    text: `${opts.body.trim()}\n\n--\n${opts.senderName}\n${site.name}\n${opts.senderEmail} · ${site.phone}`,
+  };
+}
+
 /* ---------- newsletter signup (internal) ---------- */
 
 export function newsletterNotification(email: string, origin: string) {

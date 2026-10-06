@@ -24,9 +24,17 @@ export default function NewLeadForm() {
         <input name="email" type="email" placeholder="Email" className={inputClass} />
         <input name="phone" placeholder="Phone" className={inputClass} />
       </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <input name="job_title" placeholder="Job title" className={inputClass} />
+        <input
+          name="deal_value"
+          inputMode="decimal"
+          placeholder="Estimated value (£)"
+          className={inputClass}
+        />
+      </div>
       <input
         name="linkedin_url"
-        type="url"
         placeholder="LinkedIn profile URL (https://www.linkedin.com/in/…)"
         className={inputClass}
       />

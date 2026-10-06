@@ -1,9 +1,15 @@
 import Link from "next/link";
 import {
+  ACTIVITY_STYLES,
   LEAD_STATUSES,
   STATUS_STYLES,
+  TEMPERATURE_STYLES,
+  dealValue,
+  money,
+  scoreLead,
   type FollowUp,
   type Lead,
+  type LeadStats,
   type LeadStatus,
 } from "@/lib/crm";
 import { sql } from "@/lib/db";
@@ -19,7 +25,7 @@ const fmt = new Intl.DateTimeFormat("en-GB", {
 });
 
 export default async function DashboardPage() {
-  const [counts, recent, recentActivity, followUps] = await Promise.all([
+  const [counts, recent, recentActivity, followUps, openLeads, touchRows] = await Promise.all([
     sql`SELECT status, count(*)::int AS n FROM leads GROUP BY status`,
     sql`SELECT l.*, u.name AS assignee_name FROM leads l
         LEFT JOIN users u ON u.id = l.assigned_to
@@ -35,7 +41,30 @@ export default async function DashboardPage() {
         LEFT JOIN users u ON u.id = f.assigned_to
         WHERE f.done = false AND f.due_at < now() + interval '7 days'
         ORDER BY f.due_at LIMIT 8`,
+    sql`SELECT l.*,
+          (SELECT count(*) FROM lead_activities a WHERE a.lead_id = l.id
+            AND a.type NOT IN ('status','assign'))::int AS activity_count,
+          (SELECT max(created_at) FROM lead_activities a WHERE a.lead_id = l.id) AS last_activity_at
+        FROM leads l WHERE l.status NOT IN ('won','lost')`,
+    sql`SELECT count(*)::int AS n FROM lead_activities
+        WHERE type IN ('call','email','meeting','linkedin')
+          AND created_at > now() - interval '7 days'`,
   ]);
+
+  const scored = (openLeads as (Lead & LeadStats)[])
+    .map((l) => ({ lead: l, ...scoreLead(l) }))
+    .sort((a, b) => b.score - a.score);
+  const hot = scored.filter((s) => s.temperature === "hot");
+  const pipelineValue = scored.reduce((s, x) => s + dealValue(x.lead), 0);
+  const needLinkedin = scored.filter(
+    (s) => !s.lead.linkedin_url && s.lead.source !== "newsletter"
+  ).length;
+  const snapshot = [
+    { label: "Open pipeline", value: money.format(pipelineValue), href: "/admin/pipeline" },
+    { label: "Hot leads", value: String(hot.length), href: "/admin/leads" },
+    { label: "Need LinkedIn research", value: String(needLinkedin), href: "/admin/prospecting" },
+    { label: "Touchpoints this week", value: String(touchRows[0]?.n ?? 0), href: "/admin/reports" },
+  ];
 
   const byStatus = Object.fromEntries(
     counts.map((c) => [c.status as LeadStatus, c.n as number])
@@ -83,6 +112,57 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* sales snapshot */}
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        {snapshot.map((s) => (
+          <Link
+            key={s.label}
+            href={s.href}
+            className="group rounded-2xl bg-ink p-5 text-white shadow-sm transition-transform hover:-translate-y-0.5"
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              {s.label}
+            </p>
+            <p className="mt-2 text-2xl font-extrabold">{s.value}</p>
+            <p className="mt-1 text-[11px] font-semibold text-brand-light opacity-0 transition-opacity group-hover:opacity-100">
+              View →
+            </p>
+          </Link>
+        ))}
+      </div>
+
+      {/* hottest leads */}
+      {hot.length > 0 && (
+        <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+            🔥 Hottest Leads
+          </h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {hot.slice(0, 4).map(({ lead, score, temperature }) => (
+              <Link
+                key={lead.id}
+                href={`/admin/leads/${lead.id}`}
+                className="rounded-xl border border-slate-200 p-4 transition-colors hover:border-brand"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-ink">{lead.name}</p>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${TEMPERATURE_STYLES[temperature].badge}`}>
+                    {score}
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {[lead.job_title, lead.company].filter(Boolean).join(" · ") || lead.source}
+                </p>
+                <p className="mt-2 text-xs font-semibold text-slate-600">
+                  {STATUS_STYLES[lead.status].label}
+                  {dealValue(lead) ? ` · ${money.format(dealValue(lead))}` : ""}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* pipeline bar */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -187,7 +267,9 @@ export default async function DashboardPage() {
                       {a.user_name ?? "System"}
                     </span>{" "}
                     <span className="text-slate-500">
-                      {a.type === "note" ? "added a note on" : ""}
+                      {ACTIVITY_STYLES[a.type]?.verb
+                        ? `${ACTIVITY_STYLES[a.type].verb} ·`
+                        : "on"}
                     </span>{" "}
                     <Link
                       href={`/admin/leads/${a.lead_id}`}
@@ -196,13 +278,10 @@ export default async function DashboardPage() {
                       {a.lead_name}
                     </Link>
                   </p>
-                  {a.type === "note" && a.body && (
+                  {a.body && (
                     <p className="mt-1 line-clamp-2 text-xs text-slate-500">
                       {a.body}
                     </p>
-                  )}
-                  {a.type !== "note" && a.body && (
-                    <p className="mt-1 text-xs text-slate-500">{a.body}</p>
                   )}
                   <p className="mt-1 text-[11px] text-slate-400">
                     {fmt.format(new Date(a.created_at))}

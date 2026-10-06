@@ -85,6 +85,18 @@ const statements = [
   )`,
   `CREATE INDEX IF NOT EXISTS follow_ups_lead_idx ON follow_ups(lead_id)`,
   `CREATE INDEX IF NOT EXISTS follow_ups_due_idx ON follow_ups(due_at) WHERE done = false`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS job_title TEXT`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS deal_value NUMERIC(12,2)`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source TEXT`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_medium TEXT`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign TEXT`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS landing_page TEXT`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS referrer TEXT`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS ip TEXT`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS last_contacted_at TIMESTAMPTZ`,
+  `CREATE INDEX IF NOT EXISTS leads_email_idx ON leads(lower(email))`,
+  `CREATE INDEX IF NOT EXISTS leads_source_idx ON leads(source)`,
 ];
 
 for (const s of statements) {

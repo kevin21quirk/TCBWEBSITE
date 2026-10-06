@@ -58,7 +58,7 @@ export default async function AdminLayout({
       </aside>
 
       {/* content */}
-      <div className="ml-64 flex-1">
+      <div className="ml-64 min-w-0 flex-1">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-8 backdrop-blur">
           <p className="text-sm text-slate-500">
             Welcome back,{" "}

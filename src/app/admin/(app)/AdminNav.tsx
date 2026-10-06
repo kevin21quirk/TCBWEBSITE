@@ -19,10 +19,17 @@ const items = [
     ),
   },
   {
-    href: "/admin/leads/new",
-    label: "Add Lead",
+    href: "/admin/pipeline",
+    label: "Pipeline",
     icon: (
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
+      <path d="M3 3h5v18H3V3zm6.5 0h5v12h-5V3zM16 3h5v8h-5V3z" />
+    ),
+  },
+  {
+    href: "/admin/prospecting",
+    label: "LinkedIn Prospecting",
+    icon: (
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zM8.34 17.34V10H5.9v7.34h2.44zM7.12 8.98a1.42 1.42 0 1 0 0-2.84 1.42 1.42 0 0 0 0 2.84zm11.22 8.36v-4.03c0-2.16-1.15-3.17-2.7-3.17-1.24 0-1.8.68-2.11 1.16V10h-2.44c.03.69 0 7.34 0 7.34h2.44v-4.1c0-.22.02-.44.08-.6.18-.44.58-.9 1.26-.9.89 0 1.25.68 1.25 1.67v3.93h2.22z" />
     ),
   },
   {
@@ -30,6 +37,20 @@ const items = [
     label: "Calendar",
     icon: (
       <path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V9h14v10zM5 7V5h14v2H5zm2 4h5v5H7v-5z" />
+    ),
+  },
+  {
+    href: "/admin/reports",
+    label: "Reports",
+    icon: (
+      <path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z" />
+    ),
+  },
+  {
+    href: "/admin/leads/new",
+    label: "Add Lead",
+    icon: (
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
     ),
   },
 ];

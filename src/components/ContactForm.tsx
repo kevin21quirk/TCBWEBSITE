@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getAttribution } from "@/components/Tracker";
 
 const inputClass =
   "w-full rounded-tcb border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-ink placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none";
@@ -23,7 +24,11 @@ export default function ContactForm({
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "contact", ...data }),
+        body: JSON.stringify({
+          type: "contact",
+          ...data,
+          attribution: getAttribution(),
+        }),
       });
       setStatus(res.ok ? "sent" : "error");
       if (res.ok) form.reset();

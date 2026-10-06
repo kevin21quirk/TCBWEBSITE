@@ -58,12 +58,25 @@ export async function POST(request: Request) {
     }`
   ).replace(/\/$/, "");
 
+  // Marketing attribution captured client-side (first touch, 90 days).
+  const attr =
+    body.attribution && typeof body.attribution === "object"
+      ? (body.attribution as Record<string, unknown>)
+      : {};
+  const attrField = (k: string, max = 200) =>
+    typeof attr[k] === "string" && attr[k] ? (attr[k] as string).slice(0, max) : null;
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    null;
+
   // Store the enquiry as a CRM lead — never let a DB hiccup lose the enquiry.
   let leadSaved = false;
   let leadId: number | null = null;
   try {
     const rows = await sql`
-      INSERT INTO leads (name, email, phone, message, source)
+      INSERT INTO leads (name, email, phone, message, source,
+        utm_source, utm_medium, utm_campaign, landing_page, referrer, ip)
       VALUES (
         ${type === "newsletter" ? email : `${fields.firstName} ${fields.lastName}`.trim() || email},
         ${email},
@@ -71,7 +84,13 @@ export async function POST(request: Request) {
         ${type === "newsletter"
           ? "Newsletter signup"
           : (fields.subject ? `Subject: ${fields.subject}\n\n` : "") + fields.message || null},
-        ${type === "newsletter" ? "newsletter" : "contact form"}
+        ${type === "newsletter" ? "newsletter" : "contact form"},
+        ${attrField("utm_source")},
+        ${attrField("utm_medium")},
+        ${attrField("utm_campaign")},
+        ${attrField("landing_page", 300)},
+        ${attrField("referrer", 500)},
+        ${ip}
       )
       RETURNING id`;
     leadId = rows[0].id as number;
