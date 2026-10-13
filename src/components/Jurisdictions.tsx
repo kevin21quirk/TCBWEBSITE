@@ -13,17 +13,6 @@ const regions = [
       "PAYE, tax & National Insurance handled",
     ],
   },
-  {
-    code: "IoM",
-    name: "Isle of Man",
-    intro:
-      "A dedicated Isle of Man office supporting contractors on Island contracts.",
-    points: [
-      "Isle of Man contracts supported",
-      "Local knowledge of Manx tax & NI rules",
-      "On-Island team you can speak to",
-    ],
-  },
 ];
 
 /** Multi-jurisdiction coverage band: UK and Isle of Man. */
@@ -57,7 +46,7 @@ export default function Jurisdictions() {
           </div>
         </Reveal>
 
-        <div className="mx-auto mt-14 grid max-w-4xl gap-6 md:grid-cols-2">
+        <div className="mx-auto mt-14 grid max-w-xl gap-6">
           {regions.map((r, i) => (
             <Reveal key={r.code} direction={i === 0 ? "left" : "right"} delay={i * 120}>
               <div className="group h-full rounded-tcb border border-white/15 bg-white/5 p-8 text-center backdrop-blur-md transition-colors hover:border-brand-light md:text-left">
