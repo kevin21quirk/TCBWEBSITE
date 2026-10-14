@@ -1,5 +1,4 @@
 const items = [
-  "UK & Isle of Man",
   "IR35 Compliance",
   "Payroll Management",
   "Pension & Benefits",
