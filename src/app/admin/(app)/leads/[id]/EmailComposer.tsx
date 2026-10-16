@@ -28,15 +28,45 @@ export default function EmailComposer({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [branded, setBranded] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state?.ok) {
       setSubject("");
       setBody("");
       setBranded(false);
+      setFiles([]);
+      if (fileRef.current) fileRef.current.value = "";
     }
   }, [state]);
+
+  const syncFiles = (list: File[]) => {
+    const dt = new DataTransfer();
+    list.forEach((f) => dt.items.add(f));
+    if (fileRef.current) fileRef.current.files = dt.files;
+  };
+
+  const addFiles = (picked: FileList | null) => {
+    const merged = [...files];
+    for (const f of Array.from(picked ?? [])) {
+      if (!merged.some((x) => x.name === f.name && x.size === f.size))
+        merged.push(f);
+    }
+    const next = merged.slice(0, 5);
+    setFiles(next);
+    syncFiles(next);
+  };
+
+  const removeFile = (i: number) => {
+    const next = files.filter((_, x) => x !== i);
+    setFiles(next);
+    syncFiles(next);
+  };
+
+  const fmtSize = (n: number) =>
+    n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.ceil(n / 1e3))} KB`;
 
   const applyTemplate = (id: string) => {
     const t = EMAIL_TEMPLATES.find((x) => x.id === id);
@@ -98,6 +128,49 @@ export default function EmailComposer({
         placeholder="Write your message, or pick a template above…"
         className={`${inputClass} resize-y leading-relaxed`}
       />
+      <div>
+        <input
+          ref={fileRef}
+          type="file"
+          name="attachment"
+          multiple
+          className="hidden"
+          onChange={(e) => addFiles(e.target.files)}
+        />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-brand hover:text-brand"
+        >
+          Attach files
+        </button>
+        {files.length > 0 && (
+          <ul className="mt-2 space-y-1">
+            {files.map((f, i) => (
+              <li
+                key={`${f.name}-${f.size}`}
+                className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs"
+              >
+                <span className="truncate font-medium text-ink">{f.name}</span>
+                <span className="flex shrink-0 items-center gap-2 text-slate-400">
+                  {fmtSize(f.size)}
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    aria-label={`Remove ${f.name}`}
+                    className="font-bold text-slate-400 hover:text-red-600"
+                  >
+                    &times;
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-1 text-[11px] text-slate-400">
+          Up to 5 files, 10 MB each.
+        </p>
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"

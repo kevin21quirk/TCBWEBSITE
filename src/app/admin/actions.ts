@@ -162,6 +162,10 @@ export async function saveLinkedinProfile(leadId: number, formData: FormData) {
   revalidateLead(leadId);
 }
 
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS_TOTAL = 15 * 1024 * 1024;
+
 /** Send a one-to-one email from the CRM via Resend and log it. */
 export async function sendLeadEmail(
   leadId: number,
@@ -177,6 +181,23 @@ export async function sendLeadEmail(
     | { email: string | null; status: LeadStatus }
     | undefined;
   if (!lead?.email) return { error: "This lead has no email address" };
+
+  const attachments: { filename: string; content: string }[] = [];
+  let totalBytes = 0;
+  for (const entry of formData.getAll("attachment")) {
+    if (!(entry instanceof File) || !entry.name || entry.size === 0) continue;
+    if (attachments.length >= MAX_ATTACHMENTS)
+      return { error: `Up to ${MAX_ATTACHMENTS} attachments per email` };
+    if (entry.size > MAX_ATTACHMENT_BYTES)
+      return { error: `"${entry.name}" is over the 10 MB per-file limit` };
+    totalBytes += entry.size;
+    if (totalBytes > MAX_ATTACHMENTS_TOTAL)
+      return { error: "Attachments are over the 15 MB total limit" };
+    attachments.push({
+      filename: entry.name,
+      content: Buffer.from(await entry.arrayBuffer()).toString("base64"),
+    });
+  }
 
   const key = process.env.RESEND_API_KEY;
   if (!key) return { error: "Email sending isn't configured (RESEND_API_KEY)" };
@@ -198,6 +219,7 @@ export async function sendLeadEmail(
         subject,
         html: mail.html,
         text: mail.text,
+        ...(attachments.length ? { attachments } : {}),
       }),
     });
     if (!res.ok) {
@@ -208,7 +230,12 @@ export async function sendLeadEmail(
     return { error: "Couldn't reach the email provider. Try again." };
   }
 
-  await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'email', ${`Sent: ${subject}\n\n${mail.text}`})`;
+  const logBody = `Sent: ${subject}\n\n${mail.text}${
+    attachments.length
+      ? `\n\nAttachments: ${attachments.map((a) => a.filename).join(", ")}`
+      : ""
+  }`;
+  await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'email', ${logBody})`;
   await sql`UPDATE leads SET last_contacted_at = now(), updated_at = now() WHERE id = ${leadId}`;
   // First outbound email moves a new lead into the pipeline.
   if (lead.status === "new") {
