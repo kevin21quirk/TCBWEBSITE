@@ -186,15 +186,15 @@ export async function sendLeadEmail(
   const origin = await siteOrigin();
   const mail =
     str(formData, "template") === "new-lead"
-      ? newLeadEmail({ body, subject, origin, senderName: user.name, senderEmail: fromAddr })
-      : salesEmail({ body, origin, senderName: user.name, senderEmail: fromAddr });
+      ? newLeadEmail({ body, subject, origin, senderName: site.senderName, senderEmail: fromAddr })
+      : salesEmail({ body, origin, senderName: site.senderName, senderEmail: fromAddr });
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: from.includes("<") ? from : `${site.name} <${from}>`,
+        from: from.includes("<") ? from : `${site.senderName} at ${site.name} <${from}>`,
         to: lead.email,
         reply_to: fromAddr,
         subject,

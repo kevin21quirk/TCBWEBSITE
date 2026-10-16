@@ -3,6 +3,8 @@ export const site = {
   email: "hello@thecontractorbroker.com",
   phone: "0330 043 4815",
   phoneHref: "tel:03300434815",
+  /** Name lead outreach is signed and sent under. */
+  senderName: "Joey",
 };
 
 export const navLinks = [

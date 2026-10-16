@@ -12,6 +12,7 @@ import {
   updateLeadStatus,
 } from "@/app/admin/actions";
 import { requireUser } from "@/lib/auth";
+import { site } from "@/lib/content";
 import {
   ACTIVITY_STYLES,
   LEAD_STATUSES,
@@ -365,7 +366,7 @@ export default async function LeadDetailPage({
                 leadName={lead.name}
                 leadEmail={lead.email}
                 company={lead.company}
-                senderName={me.name}
+                senderName={site.senderName}
               />
             </div>
           )}
