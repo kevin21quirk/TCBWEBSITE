@@ -97,6 +97,17 @@ const statements = [
   `ALTER TABLE leads ADD COLUMN IF NOT EXISTS last_contacted_at TIMESTAMPTZ`,
   `CREATE INDEX IF NOT EXISTS leads_email_idx ON leads(lower(email))`,
   `CREATE INDEX IF NOT EXISTS leads_source_idx ON leads(source)`,
+  `CREATE TABLE IF NOT EXISTS attachment_uploads (
+    id BIGSERIAL PRIMARY KEY,
+    upload_id TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    chunk_index INT NOT NULL,
+    data_hex TEXT NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (upload_id, chunk_index)
+  )`,
+  `CREATE INDEX IF NOT EXISTS attachment_uploads_upload_idx ON attachment_uploads(upload_id)`,
 ];
 
 for (const s of statements) {

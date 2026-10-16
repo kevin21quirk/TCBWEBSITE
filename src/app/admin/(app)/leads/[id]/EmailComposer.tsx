@@ -8,6 +8,16 @@ import { EMAIL_TEMPLATES, fillTemplate } from "@/lib/crm";
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none";
 
+const CHUNK = 1024 * 1024;
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+
+type PickedFile = {
+  id: string;
+  name: string;
+  size: number;
+  status: "uploading" | "ready" | "failed";
+};
+
 export default function EmailComposer({
   leadId,
   leadName,
@@ -28,9 +38,11 @@ export default function EmailComposer({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [branded, setBranded] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<PickedFile[]>([]);
+  const [fileError, setFileError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const uploading = files.some((f) => f.status === "uploading");
 
   useEffect(() => {
     if (state?.ok) {
@@ -38,31 +50,57 @@ export default function EmailComposer({
       setBody("");
       setBranded(false);
       setFiles([]);
-      if (fileRef.current) fileRef.current.value = "";
+      setFileError("");
     }
   }, [state]);
 
-  const syncFiles = (list: File[]) => {
-    const dt = new DataTransfer();
-    list.forEach((f) => dt.items.add(f));
-    if (fileRef.current) fileRef.current.files = dt.files;
-  };
-
-  const addFiles = (picked: FileList | null) => {
-    const merged = [...files];
-    for (const f of Array.from(picked ?? [])) {
-      if (!merged.some((x) => x.name === f.name && x.size === f.size))
-        merged.push(f);
+  // Files upload in 1 MB chunks to /api/attachments so the request never
+  // hits the platform's ~4.5 MB body cap — the form sends only upload ids.
+  const uploadFile = async (file: File, id: string) => {
+    for (let i = 0, n = Math.ceil(file.size / CHUNK); i < n; i++) {
+      const res = await fetch(
+        `/api/attachments?upload=${id}&name=${encodeURIComponent(file.name)}&chunk=${i}`,
+        { method: "POST", body: file.slice(i * CHUNK, (i + 1) * CHUNK) }
+      );
+      if (!res.ok) throw new Error("upload failed");
     }
-    const next = merged.slice(0, 5);
-    setFiles(next);
-    syncFiles(next);
   };
 
-  const removeFile = (i: number) => {
-    const next = files.filter((_, x) => x !== i);
+  const addFiles = async (picked: FileList | null) => {
+    if (fileRef.current) fileRef.current.value = "";
+    setFileError("");
+    const additions: { id: string; file: File }[] = [];
+    const next = [...files];
+    for (const f of Array.from(picked ?? [])) {
+      if (next.length >= 5) break;
+      if (f.size > MAX_FILE_BYTES) {
+        setFileError(`"${f.name}" is over the 20 MB per-file limit`);
+        continue;
+      }
+      if (next.some((x) => x.name === f.name && x.size === f.size)) continue;
+      const id = crypto.randomUUID();
+      next.push({ id, name: f.name, size: f.size, status: "uploading" });
+      additions.push({ id, file: f });
+    }
     setFiles(next);
-    syncFiles(next);
+    for (const { id, file } of additions) {
+      const ok = await uploadFile(file, id).then(
+        () => true,
+        () => false
+      );
+      setFiles((prev) =>
+        prev.map((x) =>
+          x.id === id ? { ...x, status: ok ? "ready" : "failed" } : x
+        )
+      );
+    }
+  };
+
+  const removeFile = (id: string) => {
+    setFiles((prev) => prev.filter((x) => x.id !== id));
+    fetch(`/api/attachments?upload=${id}`, { method: "DELETE" }).catch(
+      () => {}
+    );
   };
 
   const fmtSize = (n: number) =>
@@ -132,11 +170,18 @@ export default function EmailComposer({
         <input
           ref={fileRef}
           type="file"
-          name="attachment"
           multiple
           className="hidden"
-          onChange={(e) => addFiles(e.target.files)}
+          onChange={(e) => void addFiles(e.target.files)}
         />
+        {files
+          .filter((f) => f.status === "ready")
+          .map((f) => (
+            <span key={f.id}>
+              <input type="hidden" name="attachment_id" value={f.id} />
+              <input type="hidden" name="attachment_name" value={f.name} />
+            </span>
+          ))}
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
@@ -146,17 +191,25 @@ export default function EmailComposer({
         </button>
         {files.length > 0 && (
           <ul className="mt-2 space-y-1">
-            {files.map((f, i) => (
+            {files.map((f) => (
               <li
-                key={`${f.name}-${f.size}`}
+                key={f.id}
                 className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs"
               >
                 <span className="truncate font-medium text-ink">{f.name}</span>
                 <span className="flex shrink-0 items-center gap-2 text-slate-400">
-                  {fmtSize(f.size)}
+                  {f.status === "uploading" ? (
+                    <span className="text-slate-500">Uploading…</span>
+                  ) : f.status === "failed" ? (
+                    <span className="font-semibold text-red-600">
+                      upload failed
+                    </span>
+                  ) : (
+                    fmtSize(f.size)
+                  )}
                   <button
                     type="button"
-                    onClick={() => removeFile(i)}
+                    onClick={() => removeFile(f.id)}
                     aria-label={`Remove ${f.name}`}
                     className="font-bold text-slate-400 hover:text-red-600"
                   >
@@ -167,17 +220,20 @@ export default function EmailComposer({
             ))}
           </ul>
         )}
+        {fileError && (
+          <p className="mt-1 text-xs font-medium text-red-600">{fileError}</p>
+        )}
         <p className="mt-1 text-[11px] text-slate-400">
-          Up to 5 files, 10 MB each.
+          Up to 5 files · 20 MB each · 25 MB total.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || uploading}
           className="rounded-xl bg-gradient-to-r from-brand to-brand-light px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-white shadow-lg shadow-brand/30 transition-all hover:shadow-brand/50 disabled:opacity-60"
         >
-          {pending ? "Sending…" : "Send Email"}
+          {pending ? "Sending…" : uploading ? "Uploading…" : "Send Email"}
         </button>
         {state?.ok && (
           <p className="text-sm font-medium text-emerald-600">

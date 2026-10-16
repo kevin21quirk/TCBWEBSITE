@@ -163,8 +163,8 @@ export async function saveLinkedinProfile(leadId: number, formData: FormData) {
 }
 
 const MAX_ATTACHMENTS = 5;
-const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-const MAX_ATTACHMENTS_TOTAL = 15 * 1024 * 1024;
+const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+const MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024;
 
 /** Send a one-to-one email from the CRM via Resend and log it. */
 export async function sendLeadEmail(
@@ -182,21 +182,30 @@ export async function sendLeadEmail(
     | undefined;
   if (!lead?.email) return { error: "This lead has no email address" };
 
+  // Files upload in chunks to /api/attachments ahead of submit — the form
+  // only carries their upload ids, which stay well under the platform's
+  // request-size cap no matter how large the files are.
+  const uploadIds = formData.getAll("attachment_id").map(String).filter(Boolean);
+  const uploadNames = formData.getAll("attachment_name").map(String);
   const attachments: { filename: string; content: string }[] = [];
   let totalBytes = 0;
-  for (const entry of formData.getAll("attachment")) {
-    if (!(entry instanceof File) || !entry.name || entry.size === 0) continue;
+  for (const [i, uploadId] of uploadIds.entries()) {
     if (attachments.length >= MAX_ATTACHMENTS)
       return { error: `Up to ${MAX_ATTACHMENTS} attachments per email` };
-    if (entry.size > MAX_ATTACHMENT_BYTES)
-      return { error: `"${entry.name}" is over the 10 MB per-file limit` };
-    totalBytes += entry.size;
+    const name = uploadNames[i] || "attachment";
+    const rows = await sql`
+      SELECT data_hex FROM attachment_uploads
+      WHERE upload_id = ${uploadId} AND user_id = ${user.id}
+      ORDER BY chunk_index`;
+    const hex = rows.map((r) => r.data_hex as string).join("");
+    if (!hex) return { error: `"${name}" hasn't finished uploading — remove it and try again` };
+    const size = hex.length / 2;
+    if (size > MAX_ATTACHMENT_BYTES)
+      return { error: `"${name}" is over the 20 MB per-file limit` };
+    totalBytes += size;
     if (totalBytes > MAX_ATTACHMENTS_TOTAL)
-      return { error: "Attachments are over the 15 MB total limit" };
-    attachments.push({
-      filename: entry.name,
-      content: Buffer.from(await entry.arrayBuffer()).toString("base64"),
-    });
+      return { error: "Attachments are over the 25 MB total limit" };
+    attachments.push({ filename: name, content: Buffer.from(hex, "hex").toString("base64") });
   }
 
   const key = process.env.RESEND_API_KEY;
@@ -225,6 +234,9 @@ export async function sendLeadEmail(
     if (!res.ok) {
       console.error("Resend error", res.status, await res.text());
       return { error: "The email provider rejected the message — check Resend." };
+    }
+    if (uploadIds.length) {
+      await sql`DELETE FROM attachment_uploads WHERE upload_id = ANY(${uploadIds})`;
     }
   } catch {
     return { error: "Couldn't reach the email provider. Try again." };
