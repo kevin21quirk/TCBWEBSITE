@@ -66,12 +66,11 @@ export default function EmailComposer({
     }
   };
 
-  const addFiles = async (picked: FileList | null) => {
-    if (fileRef.current) fileRef.current.value = "";
+  const addFiles = async (list: File[]) => {
     setFileError("");
     const additions: { id: string; file: File }[] = [];
     const next = [...files];
-    for (const f of Array.from(picked ?? [])) {
+    for (const f of list) {
       if (next.length >= 5) break;
       if (f.size > MAX_FILE_BYTES) {
         setFileError(`"${f.name}" is over the 20 MB per-file limit`);
@@ -172,7 +171,13 @@ export default function EmailComposer({
           type="file"
           multiple
           className="hidden"
-          onChange={(e) => void addFiles(e.target.files)}
+          onChange={(e) => {
+            // Snapshot before clearing — input.files is a live FileList,
+            // so resetting the input would empty it first.
+            const list = Array.from(e.target.files ?? []);
+            e.target.value = "";
+            void addFiles(list);
+          }}
         />
         {files
           .filter((f) => f.status === "ready")
