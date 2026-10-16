@@ -228,6 +228,21 @@ Kind regards,
 {senderName}`,
   },
   {
+    id: "follow-up",
+    label: "Follow-up",
+    subject: "Following up on your umbrella company enquiry",
+    body: `Hi {firstName},
+
+Just following up on your enquiry with The Contractor Broker — I'd still love to help you find the right umbrella company for your contract.
+
+If you've been meaning to get back to us, now's a great time: a quick ten-minute call is all it takes to run a free, no-obligation comparison with clear take-home pay figures.
+
+If now isn't the right time, just reply and let me know and I'll check back in a few weeks.
+
+Kind regards,
+{senderName}`,
+  },
+  {
     id: "intro",
     label: "First contact",
     subject: "Your umbrella company enquiry — The Contractor Broker",

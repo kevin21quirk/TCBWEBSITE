@@ -10,6 +10,7 @@ const inputClass =
 
 const CHUNK = 1024 * 1024;
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const BRANDED_IDS = new Set(["new-lead", "follow-up"]);
 
 type PickedFile = {
   id: string;
@@ -37,7 +38,7 @@ export default function EmailComposer({
   );
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [branded, setBranded] = useState(false);
+  const [branded, setBranded] = useState("");
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [fileError, setFileError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
@@ -48,7 +49,7 @@ export default function EmailComposer({
     if (state?.ok) {
       setSubject("");
       setBody("");
-      setBranded(false);
+      setBranded("");
       setFiles([]);
       setFileError("");
     }
@@ -111,7 +112,7 @@ export default function EmailComposer({
     const lead = { name: leadName, company };
     setSubject(fillTemplate(t.subject, lead, senderName));
     setBody(fillTemplate(t.body, lead, senderName));
-    setBranded(t.id === "new-lead");
+    setBranded(BRANDED_IDS.has(t.id) ? t.id : "");
   };
 
   return (
@@ -128,7 +129,7 @@ export default function EmailComposer({
           </button>
         ))}
       </div>
-      {branded && <input type="hidden" name="template" value="new-lead" />}
+      {branded && <input type="hidden" name="template" value={branded} />}
       <p className="text-xs text-slate-500">
         To: <span className="font-semibold text-ink">{leadEmail}</span> · from{" "}
         <span className="font-semibold text-ink">{site.email}</span> — replies
@@ -136,12 +137,11 @@ export default function EmailComposer({
       </p>
       {branded && (
         <div className="rounded-xl border border-brand/20 bg-brand/5 px-4 py-2.5 text-xs leading-relaxed text-slate-600">
-          Sends as our branded introduction: the message below plus a
-          &ldquo;why choose us&rdquo; section and reply, call and website
-          buttons.{" "}
+          Sends as a branded email: the message below plus a &ldquo;why
+          choose us&rdquo; section and reply, call and website buttons.{" "}
           <button
             type="button"
-            onClick={() => setBranded(false)}
+            onClick={() => setBranded("")}
             className="font-semibold text-brand underline underline-offset-2"
           >
             Send as a plain email instead

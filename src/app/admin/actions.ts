@@ -19,7 +19,7 @@ import {
 } from "@/lib/crm";
 import { site } from "@/lib/content";
 import { sql } from "@/lib/db";
-import { newLeadEmail, salesEmail } from "@/lib/emails";
+import { brandedEmail, salesEmail } from "@/lib/emails";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const opt = (fd: FormData, k: string) => str(fd, k) || null;
@@ -166,6 +166,9 @@ const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 const MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024;
 
+/** EMAIL_TEMPLATES ids that send as the fully branded outreach email. */
+const BRANDED_EMAIL_TEMPLATES = new Set(["new-lead", "follow-up"]);
+
 /** Send a one-to-one email from the CRM via Resend and log it. */
 export async function sendLeadEmail(
   leadId: number,
@@ -212,10 +215,9 @@ export async function sendLeadEmail(
   if (!key) return { error: "Email sending isn't configured (RESEND_API_KEY)" };
   // Lead outreach goes from the shared hello@ inbox — replies land there too.
   const origin = await siteOrigin();
-  const mail =
-    str(formData, "template") === "new-lead"
-      ? newLeadEmail({ body, subject, origin, senderName: site.senderName })
-      : salesEmail({ body, origin, senderName: site.senderName });
+  const mail = BRANDED_EMAIL_TEMPLATES.has(str(formData, "template"))
+    ? brandedEmail({ body, subject, origin, senderName: site.senderName })
+    : salesEmail({ body, origin, senderName: site.senderName });
 
   try {
     const res = await fetch("https://api.resend.com/emails", {

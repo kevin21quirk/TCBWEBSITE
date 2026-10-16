@@ -378,9 +378,9 @@ ${signature(opts.senderName)}`;
   };
 }
 
-/* ---------- branded introduction email for newly identified leads ---------- */
+/* ---------- branded outreach email (new-lead intro, follow-up) ---------- */
 
-export function newLeadEmail(opts: {
+export function brandedEmail(opts: {
   body: string;
   subject: string;
   origin: string;
@@ -449,7 +449,7 @@ ${signature(opts.senderName)}`;
       preheader:
         "A free, independent umbrella company comparison — find the best fit for your contract in about 10 minutes.",
       body,
-      footerNote: `You received this introduction from ${esc(site.name)} because we think our free umbrella company comparison could be useful to you. Simply reply to this email to chat — or to let us know you'd rather not hear from us again.`,
+      footerNote: `You received this email from ${esc(site.name)} because we think our free umbrella company comparison could be useful to you. Simply reply to this email to chat — or to let us know you'd rather not hear from us again.`,
     }),
     text: [
       opts.body.trim(),
