@@ -29,6 +29,16 @@ type WarmLead = {
   last_open: string | null;
 };
 
+type BrowseLead = {
+  id: number;
+  name: string;
+  company: string | null;
+  status: LeadStatus;
+  views: number;
+  last_view: string | null;
+  last_path: string | null;
+};
+
 type SeqRow = {
   lead_id: number;
   step: number;
@@ -54,6 +64,7 @@ export default async function OutreachPage() {
     leadRows,
     warmRows,
     seqRows,
+    browsingRows,
     campaignRows,
     sendStats,
     weekOpenRows,
@@ -73,6 +84,15 @@ export default async function OutreachPage() {
     sql`SELECT e.lead_id, e.step, e.next_send_at, e.active, l.name AS lead_name
         FROM sequence_enrolments e JOIN leads l ON l.id = e.lead_id
         ORDER BY e.active DESC, e.next_send_at NULLS LAST LIMIT 30`,
+    sql`SELECT l.id, l.name, l.company, l.status,
+          count(*)::int AS views, max(pv.created_at) AS last_view,
+          (SELECT path FROM page_views p2 WHERE p2.lead_id = l.id
+            ORDER BY p2.created_at DESC LIMIT 1) AS last_path
+        FROM page_views pv JOIN leads l ON l.id = pv.lead_id
+        WHERE pv.created_at > now() - interval '14 days'
+          AND l.status NOT IN ('won','lost')
+        GROUP BY l.id, l.name, l.company, l.status
+        ORDER BY last_view DESC LIMIT 10`,
     sql`SELECT c.*, u.name AS by_name,
           (SELECT sum(s.open_count)::int FROM email_sends s
             WHERE s.campaign_id = c.id) AS opens
@@ -94,6 +114,7 @@ export default async function OutreachPage() {
   const activeSequences = (seqCountRows[0] as { n: number }).n;
 
   const warm = warmRows as WarmLead[];
+  const browsing = browsingRows as BrowseLead[];
   const seqs = seqRows as SeqRow[];
   const campaigns = campaignRows as CampaignRow[];
   const runningSeqs = seqs.filter((s) => s.active);
@@ -263,6 +284,53 @@ export default async function OutreachPage() {
                       >
                         {STATUS_STYLES[l.status].label}
                       </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* tracked site visits */}
+          <div className={cardClass}>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+              Browsing the Site
+            </h2>
+            <p className="mb-4 mt-1 text-xs text-slate-500">
+              Leads who clicked a tracked link (?r=) in the last 14 days — every
+              page they view is logged on their timeline.
+            </p>
+            {browsing.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-400">
+                No tracked visits yet — send a smart link from a lead&apos;s
+                profile.
+              </p>
+            ) : (
+              <ul className="space-y-2.5">
+                {browsing.map((l) => (
+                  <li key={l.id}>
+                    <Link
+                      href={`/admin/leads/${l.id}`}
+                      className="flex items-center gap-3 rounded-xl border border-slate-200 px-3.5 py-2.5 transition-colors hover:border-teal-300 hover:bg-teal-50/40"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-ink">
+                          {l.name}
+                          {l.company && (
+                            <span className="font-normal text-slate-400">
+                              {" "}
+                              · {l.company}
+                            </span>
+                          )}
+                        </span>
+                        <span className="block truncate text-[11px] text-slate-500">
+                          {l.views} view{l.views === 1 ? "" : "s"}
+                          {l.last_path && ` · last on ${l.last_path}`}
+                          {l.last_view &&
+                            ` · ${fmt.format(new Date(l.last_view))}`}
+                        </span>
+                      </span>
+                      <span className="flex h-2 w-2 shrink-0 rounded-full bg-teal-500" />
                     </Link>
                   </li>
                 ))}

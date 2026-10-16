@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { sendCampaign } from "@/app/admin/actions";
+import { sendCampaign, sendTestEmail } from "@/app/admin/actions";
 import { EMAIL_TEMPLATES, STATUS_STYLES, type LeadStatus } from "@/lib/crm";
 
 const inputClass =
@@ -38,6 +38,45 @@ export default function CampaignComposer({ leads }: { leads: ComposerLead[] }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+
+  const loadPreview = async () => {
+    if (previewHtml) {
+      setPreviewHtml(null);
+      return;
+    }
+    setPreviewing(true);
+    setPreviewError(null);
+    try {
+      const res = await fetch("/api/outreach/preview", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          subject,
+          body,
+          template: templateId || undefined,
+        }),
+      });
+      const data = (await res.json()) as { html?: string; error?: string };
+      if (data.html) setPreviewHtml(data.html);
+      else setPreviewError(data.error ?? "Couldn't build the preview");
+    } catch {
+      setPreviewError("Couldn't build the preview");
+    }
+    setPreviewing(false);
+  };
+
+  const sendTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    const r = await sendTestEmail(subject, body, templateId || undefined);
+    setTestResult(r.ok ? "sent" : (r.error ?? "Failed to send"));
+    setTesting(false);
+  };
 
   const pickTemplate = (id: string) => {
     setTemplateId(id);
@@ -166,6 +205,56 @@ export default function CampaignComposer({ leads }: { leads: ComposerLead[] }) {
         .map((id) => (
           <input key={id} type="hidden" name="lead_ids" value={id} />
         ))}
+
+      {/* preview + test send */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={loadPreview}
+          disabled={previewing}
+          className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-ink transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
+        >
+          {previewing ? "Building…" : previewHtml ? "Hide preview" : "Preview"}
+        </button>
+        <button
+          type="button"
+          onClick={sendTest}
+          disabled={testing}
+          className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-ink transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
+        >
+          {testing ? "Sending…" : "Send me a test"}
+        </button>
+        {testResult && (
+          <span
+            className={`text-xs font-semibold ${
+              testResult === "sent" ? "text-emerald-600" : "text-red-600"
+            }`}
+          >
+            {testResult === "sent"
+              ? "Test sent — check your inbox"
+              : testResult}
+          </span>
+        )}
+        {previewError && (
+          <span className="text-xs font-semibold text-red-600">
+            {previewError}
+          </span>
+        )}
+      </div>
+
+      {previewHtml && (
+        <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="border-b border-slate-200 bg-slate-50 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+            Preview — shown as &ldquo;Jordan Smith at Acme Contracts Ltd&rdquo;
+          </div>
+          <iframe
+            title="Email preview"
+            srcDoc={previewHtml}
+            sandbox=""
+            className="h-[480px] w-full bg-slate-100"
+          />
+        </div>
+      )}
 
       {/* audience picker */}
       <div>

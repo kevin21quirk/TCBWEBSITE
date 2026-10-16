@@ -5,6 +5,8 @@ import { useEffect } from "react";
 
 const ATTR_KEY = "tcb_attr";
 const ATTR_DAYS = 90;
+const REF_KEY = "tcb_ref";
+const REF_DAYS = 30;
 
 export type Attribution = {
   utm_source?: string;
@@ -47,12 +49,36 @@ function captureAttribution() {
   } catch {}
 }
 
+/**
+ * Lead tracking: an ?r=<leadId> "smart link" click (from an email, a LinkedIn
+ * message…) is remembered for 30 days and sent with every page view, so the
+ * CRM can show exactly which pages that lead browses afterwards.
+ */
+function captureRef(): number | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = Number(params.get("r"));
+    if (Number.isInteger(fromUrl) && fromUrl > 0) {
+      localStorage.setItem(
+        REF_KEY,
+        JSON.stringify({ at: Date.now(), id: fromUrl })
+      );
+      return fromUrl;
+    }
+    const raw = JSON.parse(localStorage.getItem(REF_KEY) ?? "null");
+    if (raw && Date.now() - raw.at < REF_DAYS * 864e5 && raw.id > 0)
+      return raw.id;
+  } catch {}
+  return null;
+}
+
 /** Records a page view for every public route change. */
 export default function Tracker() {
   const pathname = usePathname();
 
   useEffect(() => {
     captureAttribution();
+    const ref = captureRef();
     const t = setTimeout(() => {
       fetch("/api/track", {
         method: "POST",
@@ -60,6 +86,7 @@ export default function Tracker() {
         body: JSON.stringify({
           path: pathname,
           referrer: document.referrer || null,
+          ref,
         }),
         keepalive: true,
       }).catch(() => {});

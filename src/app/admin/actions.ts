@@ -14,6 +14,7 @@ import {
 import {
   CONTACT_ACTIVITY_TYPES,
   LEAD_STATUSES,
+  LINKEDIN_SCRIPTS,
   LOGGABLE_ACTIVITIES,
   fillTemplate,
   type LeadStatus,
@@ -23,6 +24,7 @@ import { sql } from "@/lib/db";
 import {
   SEQUENCE_STEPS,
   deliverLeadEmail,
+  sendPreviewEmail,
   templateForLead,
 } from "@/lib/outreach";
 
@@ -364,6 +366,56 @@ export async function stopSequence(
   revalidateLead(leadId);
   revalidatePath("/admin/outreach");
   return { ok: true };
+}
+
+/** Mark a LinkedIn playbook step done — step 0 resets the playbook. */
+export async function markLinkedinStep(
+  leadId: number,
+  _prev: { ok?: boolean; error?: string } | undefined,
+  formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const user = await requireUser();
+  const step = Number(str(formData, "step"));
+  if (!Number.isInteger(step) || step < 0 || step > LINKEDIN_SCRIPTS.length) {
+    return { error: "Invalid step" };
+  }
+  if (step === 0) {
+    await sql`UPDATE leads SET linkedin_step = 0, updated_at = now() WHERE id = ${leadId}`;
+    await sql`
+      INSERT INTO lead_activities (lead_id, user_id, type, body)
+      VALUES (${leadId}, ${user.id}, 'note', 'LinkedIn playbook reset')`;
+  } else {
+    const script = LINKEDIN_SCRIPTS[step - 1];
+    await sql`
+      UPDATE leads SET linkedin_step = GREATEST(linkedin_step, ${step}), updated_at = now()
+      WHERE id = ${leadId}`;
+    await sql`
+      INSERT INTO lead_activities (lead_id, user_id, type, body)
+      VALUES (${leadId}, ${user.id}, 'linkedin',
+              ${`Sent the ${script.label.toLowerCase()} on LinkedIn`})`;
+  }
+  revalidateLead(leadId);
+  revalidatePath("/admin/outreach");
+  return { ok: true };
+}
+
+/** Send a filled-in preview of a campaign message to your own inbox. */
+export async function sendTestEmail(
+  subject: string,
+  body: string,
+  template?: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const user = await requireUser();
+  if (!subject.trim() || !body.trim()) {
+    return { error: "Subject and message are required" };
+  }
+  return sendPreviewEmail({
+    to: user.email,
+    subject: subject.trim(),
+    body: body.trim(),
+    template,
+    origin: await siteOrigin(),
+  });
 }
 
 /** Bulk import (e.g. a Sales Navigator / LinkedIn export). */

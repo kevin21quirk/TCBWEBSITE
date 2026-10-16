@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DeleteLeadButton from "@/app/admin/(app)/leads/[id]/DeleteLeadButton";
 import EmailComposer from "@/app/admin/(app)/leads/[id]/EmailComposer";
+import LinkedInPlaybook from "@/app/admin/(app)/leads/[id]/LinkedInPlaybook";
+import SmartLinks from "@/app/admin/(app)/leads/[id]/SmartLinks";
 import SequenceControls from "@/app/admin/(app)/outreach/SequenceControls";
 import {
   addFollowUp,
@@ -108,19 +110,17 @@ export default async function LeadDetailPage({
     last_open: string | null;
   };
 
-  // Pages this person viewed on the website (matched by IP).
-  const journey = lead.ip
-    ? ((await sql`
-        SELECT pv.path, pv.created_at, v.city, v.country
-        FROM page_views pv JOIN visitors v ON v.id = pv.visitor_id
-        WHERE v.ip = ${lead.ip}
-        ORDER BY pv.created_at DESC LIMIT 25`) as {
-        path: string;
-        created_at: string;
-        city: string | null;
-        country: string | null;
-      }[])
-    : [];
+  // Pages this person viewed — matched by smart link (?r=) or by IP.
+  const journey = (await sql`
+    SELECT pv.path, pv.created_at, v.city, v.country
+    FROM page_views pv JOIN visitors v ON v.id = pv.visitor_id
+    WHERE pv.lead_id = ${leadId} OR v.ip = ${lead.ip}
+    ORDER BY pv.created_at DESC LIMIT 25`) as {
+    path: string;
+    created_at: string;
+    city: string | null;
+    country: string | null;
+  }[];
 
   const acts = activity as LeadActivity[];
   const { score, temperature } = scoreLead({
@@ -524,6 +524,37 @@ export default async function LeadDetailPage({
                 </li>
               ))}
             </ol>
+          </div>
+
+          {/* LinkedIn playbook — the manual Sales Navigator workflow */}
+          <div className={cardClass}>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+              LinkedIn Playbook
+            </h2>
+            <p className="mb-4 mt-1 text-xs leading-relaxed text-slate-500">
+              Ready-written connect, message and follow-up — copy, paste into
+              LinkedIn, mark it sent.
+            </p>
+            <LinkedInPlaybook
+              leadId={leadId}
+              leadName={lead.name}
+              company={lead.company}
+              linkedinUrl={lead.linkedin_url}
+              searchUrl={linkedinSearches(lead)[0]?.href ?? null}
+              step={lead.linkedin_step}
+              senderName={site.senderName}
+            />
+          </div>
+
+          {/* tracked smart links */}
+          <div className={cardClass}>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+              Tracked Links
+            </h2>
+            <p className="mb-3 mt-1 text-xs leading-relaxed text-slate-500">
+              Know the moment they browse the site.
+            </p>
+            <SmartLinks leadId={leadId} />
           </div>
 
           <div className={cardClass}>

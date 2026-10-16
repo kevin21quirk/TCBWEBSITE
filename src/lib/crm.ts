@@ -67,6 +67,8 @@ export type Lead = {
   landing_page: string | null;
   referrer: string | null;
   ip: string | null;
+  /** LinkedIn playbook progress: 0-3 (index into LINKEDIN_SCRIPTS done). */
+  linkedin_step: number;
   last_contacted_at: string | null;
   assigned_to: number | null;
   assignee_name?: string | null;
@@ -113,6 +115,7 @@ export const ACTIVITY_STYLES: Record<string, { dot: string; verb: string }> = {
   open: { dot: "bg-emerald-500", verb: "" },
   click: { dot: "bg-sky-500", verb: "" },
   bounce: { dot: "bg-red-500", verb: "" },
+  visit: { dot: "bg-teal-500", verb: "" },
   update: { dot: "bg-slate-400", verb: "updated details" },
 };
 
@@ -331,7 +334,43 @@ export function fillTemplate(
   return text
     .replace(/\{firstName\}/g, lead.name.split(" ")[0] || "there")
     .replace(/\{companyClause\}/g, lead.company ? ` like those at ${lead.company}` : "")
+    .replace(/\{company\}/g, lead.company ?? "your company")
     .replace(/\{senderName\}/g, senderName);
+}
+
+/* ---------- LinkedIn outreach playbook ---------- */
+
+/**
+ * The app can't send LinkedIn messages, so it writes them: a 3-step manual
+ * sequence personalised per lead, tracked via leads.linkedin_step.
+ * Step ids index this array — step 0 = connect note, etc.
+ */
+export const LINKEDIN_SCRIPTS = [
+  {
+    id: "connect",
+    label: "Connect note",
+    hint: "Goes with the connection request — keep it under 300 chars.",
+    body: `Hi {firstName} — I help contractors{companyClause} keep more of their day rate with a free umbrella company comparison. Thought it'd be worth connecting.`,
+  },
+  {
+    id: "message",
+    label: "First message",
+    hint: "Send once they've accepted your request.",
+    body: `Thanks for connecting, {firstName}! Quick context — I'm {senderName} from The Contractor Broker. We compare vetted, compliant umbrella companies for contractors, completely free.
+
+If the contract work at {company} runs through an umbrella, a 10-minute comparison typically saves people £30–£80 a month. Happy to send over a tailored shortlist — no obligation either way.`,
+  },
+  {
+    id: "chase",
+    label: "Follow-up",
+    hint: "A week later, if they've gone quiet — then leave it.",
+    body: `Hi {firstName} — just floating this back up in case it got buried. The comparison's free and takes about 10 minutes; if umbrella pay isn't a headache right now, no worries at all. If it ever is, I'm at hello@thecontractorbroker.com.`,
+  },
+] as const;
+
+/** Tracked links that attribute a lead's site visits back to them. */
+export function smartLink(leadId: number, path = "/") {
+  return `https://thecontractorbroker.com${path}?r=${leadId}`;
 }
 
 export type LeadActivity = {

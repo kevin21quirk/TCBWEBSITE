@@ -57,6 +57,66 @@ export function templateForLead(
   };
 }
 
+/** Fictional lead used for previews and test sends. */
+const SAMPLE_LEAD = { name: "Jordan Smith", company: "Acme Contracts Ltd" };
+
+/** Render a message with merge tags filled by the sample lead — for preview. */
+export function previewEmailHtml(opts: {
+  subject: string;
+  body: string;
+  template?: string;
+  origin: string;
+}) {
+  return renderMail({
+    subject: fillTemplate(opts.subject, SAMPLE_LEAD, site.senderName),
+    body: fillTemplate(opts.body, SAMPLE_LEAD, site.senderName),
+    template: opts.template,
+    origin: opts.origin,
+  }).html;
+}
+
+/**
+ * Send a test copy straight to an inbox — no lead, no tracking, no timeline
+ * entry. Used by the campaign composer's "send me a test" button.
+ */
+export async function sendPreviewEmail(opts: {
+  to: string;
+  subject: string;
+  body: string;
+  template?: string;
+  origin: string;
+}): Promise<{ ok?: boolean; error?: string }> {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { error: "Email sending isn't configured (RESEND_API_KEY)" };
+  const mail = renderMail({
+    subject: fillTemplate(opts.subject, SAMPLE_LEAD, site.senderName),
+    body: fillTemplate(opts.body, SAMPLE_LEAD, site.senderName),
+    template: opts.template,
+    origin: opts.origin,
+  });
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `${site.senderName} at ${site.name} <${site.email}>`,
+        to: opts.to,
+        reply_to: site.email,
+        subject: fillTemplate(opts.subject, SAMPLE_LEAD, site.senderName),
+        html: mail.html,
+        text: mail.text,
+      }),
+    });
+    if (!res.ok) {
+      console.error("Resend error", res.status, await res.text());
+      return { error: "The email provider rejected the message — check Resend." };
+    }
+    return { ok: true };
+  } catch {
+    return { error: "Couldn't reach the email provider. Try again." };
+  }
+}
+
 /**
  * Send one lead email via Resend, then log it: an email_sends row (so the
  * webhook can attribute opens/clicks), a timeline activity, last_contacted_at

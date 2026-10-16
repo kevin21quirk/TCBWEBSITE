@@ -65,11 +65,13 @@ const statements = [
   `CREATE TABLE IF NOT EXISTS page_views (
     id SERIAL PRIMARY KEY,
     visitor_id INT NOT NULL REFERENCES visitors(id) ON DELETE CASCADE,
+    lead_id INT REFERENCES leads(id) ON DELETE SET NULL,
     path TEXT NOT NULL,
     referrer TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS page_views_visitor_idx ON page_views(visitor_id)`,
+  `CREATE INDEX IF NOT EXISTS page_views_lead_idx ON page_views(lead_id)`,
   `CREATE INDEX IF NOT EXISTS page_views_created_idx ON page_views(created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS visitors_last_seen_idx ON visitors(last_seen DESC)`,
   `CREATE TABLE IF NOT EXISTS follow_ups (
@@ -94,6 +96,7 @@ const statements = [
   `ALTER TABLE leads ADD COLUMN IF NOT EXISTS landing_page TEXT`,
   `ALTER TABLE leads ADD COLUMN IF NOT EXISTS referrer TEXT`,
   `ALTER TABLE leads ADD COLUMN IF NOT EXISTS ip TEXT`,
+  `ALTER TABLE leads ADD COLUMN IF NOT EXISTS linkedin_step INT NOT NULL DEFAULT 0`,
   `ALTER TABLE leads ADD COLUMN IF NOT EXISTS last_contacted_at TIMESTAMPTZ`,
   `CREATE INDEX IF NOT EXISTS leads_email_idx ON leads(lower(email))`,
   `CREATE INDEX IF NOT EXISTS leads_source_idx ON leads(source)`,
