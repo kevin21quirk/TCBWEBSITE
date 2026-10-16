@@ -16,6 +16,12 @@ export type Prospect = {
 
 export const SIC_PRESETS = [
   {
+    id: "contractors",
+    label: "New contractors",
+    codes: ["62020", "62012", "70229", "71122", "74909"],
+    hint: "New one-person consultancies — the director is a contractor who needs an umbrella",
+  },
+  {
     id: "agencies",
     label: "Recruitment agencies",
     codes: ["78100", "78109", "78200", "78300"],
@@ -30,6 +36,11 @@ export const SIC_PRESETS = [
 ] as const;
 
 export const SIC_LABELS: Record<string, string> = {
+  "62020": "IT consultancy",
+  "62012": "Software development",
+  "70229": "Management consultancy",
+  "71122": "Engineering consultancy",
+  "74909": "Other professional",
   "78100": "Employment placement agencies",
   "78109": "Other placement agency activities",
   "78200": "Temporary employment agency",
@@ -130,4 +141,82 @@ export async function searchCompanies(opts: {
     sicCodes: i.sic_codes ?? [],
   }));
   return { items, total: data.hits ?? items.length };
+}
+
+/* ---------- officers (the people behind a company) ---------- */
+
+export type Officer = {
+  name: string;
+  role: string;
+  appointedOn: string | null;
+};
+
+/** "SMITH, John David" -> "John David Smith" */
+function personName(raw: string) {
+  const i = raw.indexOf(",");
+  if (i === -1) return titleCase(raw);
+  const surname = raw.slice(0, i);
+  const forenames = raw.slice(i + 1).trim();
+  return titleCase(`${forenames} ${surname}`.trim());
+}
+
+function titleCase(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (c) => c.toUpperCase())
+    .replace(/\bMc([a-z])/g, (_, c) => `Mc${c.toUpperCase()}`)
+    .replace(/\bO'([a-z])/g, (_, c) => `O'${c.toUpperCase()}`);
+}
+
+function titleCaseRole(role: string) {
+  return titleCase(role.replace(/[_-]/g, " "));
+}
+
+/**
+ * The directors/officers registered against a company — turns an anonymous
+ * company prospect into named people to contact.
+ */
+export async function getOfficers(
+  companyNumber: string
+): Promise<{ items: Officer[]; error?: never } | { items: []; error: string }> {
+  const key = process.env.COMPANIES_HOUSE_API_KEY;
+  if (!key) return { items: [], error: "not-configured" };
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `${BASE}/company/${companyNumber}/officers?items_per_page=35`,
+      {
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${key}:`).toString("base64")}`,
+        },
+        cache: "no-store",
+      }
+    );
+  } catch {
+    return { items: [], error: "network" };
+  }
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403)
+      return { items: [], error: "bad-key" };
+    if (res.status === 429) return { items: [], error: "rate-limit" };
+    return { items: [], error: `api-${res.status}` };
+  }
+
+  const data = (await res.json()) as {
+    items?: {
+      name?: string;
+      officer_role?: string;
+      appointed_on?: string;
+      resigned_on?: string;
+    }[];
+  };
+  const items: Officer[] = (data.items ?? [])
+    .filter((o) => o.name && !o.resigned_on)
+    .map((o) => ({
+      name: personName(o.name!),
+      role: o.officer_role ? titleCaseRole(o.officer_role) : "Officer",
+      appointedOn: o.appointed_on ?? null,
+    }));
+  return { items };
 }

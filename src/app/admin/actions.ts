@@ -545,6 +545,41 @@ export async function addProspect(formData: FormData) {
   redirect(returnTo);
 }
 
+/** Add a named person (a Companies House officer) as a lead. */
+export async function addProspectPerson(formData: FormData) {
+  const user = await requireUser();
+  const name = str(formData, "name").slice(0, 200);
+  const company = str(formData, "company").slice(0, 200);
+  const jobTitle = str(formData, "job_title").slice(0, 120);
+  const returnTo = str(formData, "return") || "/admin/radar";
+  if (!name) redirect(returnTo);
+
+  const dup = await sql`
+    SELECT id FROM leads
+    WHERE lower(name) = lower(${name})
+      AND lower(company) = lower(${company})
+    LIMIT 1`;
+  if (dup.length === 0) {
+    const rows = await sql`
+      INSERT INTO leads (name, company, job_title, message, source, assigned_to, tags)
+      VALUES (${name}, ${company || null}, ${jobTitle || null},
+              ${`Officer at ${company || "unknown company"} — found via Lead Radar.`},
+              'lead radar', ${user.id}, ${["lead-radar"]}::text[])
+      RETURNING id`;
+    await sql`
+      INSERT INTO follow_ups (lead_id, assigned_to, title, due_at, auto)
+      VALUES (${rows[0].id}, ${user.id}, ${`First outreach to ${name.slice(0, 80)}`}, now() + interval '1 day', true)`;
+    await sql`
+      INSERT INTO lead_activities (lead_id, user_id, type, body)
+      VALUES (${rows[0].id}, ${user.id}, 'update',
+              ${`Imported from Lead Radar — ${jobTitle || "officer"} at ${company}`})`;
+    revalidatePath("/admin/leads");
+    revalidatePath("/admin/prospecting");
+    revalidatePath("/admin/calendar");
+  }
+  redirect(returnTo);
+}
+
 export async function deleteLead(leadId: number) {
   await requireSuperAdmin();
   await sql`DELETE FROM leads WHERE id = ${leadId}`;

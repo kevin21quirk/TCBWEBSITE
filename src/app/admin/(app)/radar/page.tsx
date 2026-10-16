@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { addProspect } from "@/app/admin/actions";
+import { addProspect, addProspectPerson } from "@/app/admin/actions";
 import { requireUser } from "@/lib/auth";
 import {
   SIC_LABELS,
   SIC_PRESETS,
+  getOfficers,
   isConfigured,
   searchCompanies,
   type Prospect,
@@ -31,6 +32,7 @@ export default async function RadarPage({
     q?: string;
     loc?: string;
     sic?: string;
+    people?: string;
   }>;
 }) {
   await requireUser();
@@ -38,8 +40,9 @@ export default async function RadarPage({
   const q = (sp.q ?? "").trim();
   const loc = (sp.loc ?? "").trim();
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
-  const sic = SIC_PRESETS.some((p) => p.id === sp.sic) ? sp.sic! : "agencies";
+  const sic = SIC_PRESETS.some((p) => p.id === sp.sic) ? sp.sic! : "contractors";
   const scanning = sp.scan === "1";
+  const peopleParam = (sp.people ?? "").trim();
   const currentQs = `/admin/radar?${new URLSearchParams({
     scan: "1",
     days: String(days),
@@ -67,6 +70,21 @@ export default async function RadarPage({
       )
     : new Set<string>();
 
+  // The expanded company — pull its registered officers (directors etc).
+  const officers =
+    scanning && peopleParam ? await getOfficers(peopleParam) : null;
+
+  // People already in the CRM, keyed "name|company".
+  const existingPeople = officers?.items.length
+    ? new Set(
+        (
+          await sql`
+            SELECT lower(name) AS n, lower(company) AS c
+            FROM leads WHERE company IS NOT NULL`
+        ).map((r) => `${r.n}|${r.c}`)
+      )
+    : new Set<string>();
+
   const presetLink = (d: number) =>
     `/admin/radar?scan=1&days=${d}&sic=${sic}&q=${encodeURIComponent(q)}&loc=${encodeURIComponent(loc)}`;
 
@@ -88,9 +106,11 @@ export default async function RadarPage({
           Lead Radar
         </h1>
         <p className="mt-1 max-w-2xl text-xs text-slate-500">
-          Scans the official UK company register (Companies House) for active
-          recruitment agencies — including brand-new incorporations, before your
-          competitors find them. Add any company to the CRM in one click.
+          Scans the official UK company register (Companies House) for newly
+          formed companies — new contractors need an umbrella and new agencies
+          need partners, before your competitors find them. Open{" "}
+          <strong>People</strong> on any company to see the named directors to
+          contact, then add them to the CRM in one click.
         </p>
       </div>
 
@@ -214,7 +234,11 @@ export default async function RadarPage({
                 .filter(Boolean)
                 .join(" · ");
               return (
-                <div key={p.companyNumber} className="px-6 py-4">
+                <div
+                  key={p.companyNumber}
+                  id={`people-${p.companyNumber}`}
+                  className="scroll-mt-24 px-6 py-4"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-ink">{p.companyName}</p>
@@ -239,6 +263,16 @@ export default async function RadarPage({
                       )}
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                      <Link
+                        href={`${currentQs}&people=${p.companyNumber}#people-${p.companyNumber}`}
+                        className={`rounded-lg px-2.5 py-2 text-[11px] font-semibold transition-colors ${
+                          peopleParam === p.companyNumber
+                            ? "bg-ink text-white"
+                            : "border border-slate-200 text-slate-600 hover:border-ink hover:text-ink"
+                        }`}
+                      >
+                        People {peopleParam === p.companyNumber ? "▴" : "▾"}
+                      </Link>
                       {inCrm ? (
                         <span className="rounded-full bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
                           ✓ In CRM
@@ -284,6 +318,103 @@ export default async function RadarPage({
                       </a>
                     </div>
                   </div>
+
+                  {/* registered officers — the named people to contact */}
+                  {peopleParam === p.companyNumber && officers && (
+                    <div className="mt-4 rounded-xl border border-brand/20 bg-gradient-to-br from-brand/[0.04] to-orange-50 p-4">
+                      <h3 className="text-xs font-bold uppercase tracking-widest text-ink">
+                        The people behind {p.companyName}
+                      </h3>
+                      {"error" in officers && officers.error ? (
+                        <p className="mt-3 text-xs text-red-600">
+                          {officers.error === "rate-limit"
+                            ? "Companies House rate limit — wait a minute and try again."
+                            : "Couldn't load the officers for this company."}
+                        </p>
+                      ) : officers.items.length === 0 ? (
+                        <p className="mt-3 text-xs text-slate-500">
+                          No officers on record for this company.
+                        </p>
+                      ) : (
+                        <ul className="mt-3 space-y-2">
+                          {officers.items.map((o) => {
+                            const personKey = `${o.name.toLowerCase()}|${p.companyName.toLowerCase()}`;
+                            const personInCrm = existingPeople.has(personKey);
+                            const linkedinSearch = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(`${o.name} ${p.companyName}`)}`;
+                            return (
+                              <li
+                                key={o.name + o.role}
+                                className="flex flex-wrap items-center gap-3 rounded-xl border border-white/70 bg-white/80 px-3.5 py-2.5"
+                              >
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-orange-500 text-xs font-bold text-white">
+                                  {o.name.charAt(0).toUpperCase()}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold text-ink">
+                                    {o.name}
+                                  </p>
+                                  <p className="text-[11px] text-slate-500">
+                                    {o.role}
+                                    {o.appointedOn &&
+                                      ` · appointed ${fmt.format(new Date(o.appointedOn))}`}
+                                  </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1.5">
+                                  {personInCrm ? (
+                                    <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                                      ✓ In CRM
+                                    </span>
+                                  ) : (
+                                    <form action={addProspectPerson}>
+                                      <input
+                                        type="hidden"
+                                        name="name"
+                                        value={o.name}
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="company"
+                                        value={p.companyName}
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="job_title"
+                                        value={o.role}
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="return"
+                                        value={`${currentQs}&people=${p.companyNumber}`}
+                                      />
+                                      <button
+                                        type="submit"
+                                        className="rounded-full bg-gradient-to-r from-brand to-brand-light px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-white shadow shadow-brand/30 hover:shadow-brand/50"
+                                      >
+                                        + Add as lead
+                                      </button>
+                                    </form>
+                                  )}
+                                  <a
+                                    href={linkedinSearch}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title="Find this person on LinkedIn"
+                                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-[#0a66c2] hover:text-[#0a66c2]"
+                                  >
+                                    in ↗
+                                  </a>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                      <p className="mt-3 text-[11px] text-slate-400">
+                        Directors &amp; officers from the official register —
+                        add them, find them on LinkedIn, then run the playbook.
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })}
