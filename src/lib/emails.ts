@@ -338,12 +338,12 @@ ${detailRows}
 
 /* ---------- one-to-one sales email sent from the CRM ---------- */
 
-const signature = (senderName: string, senderEmail: string) => `
+const signature = (senderName: string) => `
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:12px;border-top:1px solid ${LINE};">
 <tr><td style="padding-top:16px;font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};">
   <strong style="color:${INK};">${esc(senderName)}</strong><br />
   ${esc(site.name)}<br />
-  <a href="mailto:${esc(senderEmail)}" style="color:${BRAND};text-decoration:none;">${esc(senderEmail)}</a>
+  <a href="mailto:${esc(site.email)}" style="color:${BRAND};text-decoration:none;">${esc(site.email)}</a>
   &nbsp;&middot;&nbsp;
   <a href="${esc(site.phoneHref)}" style="color:${BRAND};text-decoration:none;">${esc(site.phone)}</a>
 </td></tr>
@@ -363,10 +363,9 @@ export function salesEmail(opts: {
   body: string;
   origin: string;
   senderName: string;
-  senderEmail: string;
 }) {
   const body = `${paragraphs(opts.body)}
-${signature(opts.senderName, opts.senderEmail)}`;
+${signature(opts.senderName)}`;
 
   return {
     html: layout({
@@ -375,7 +374,7 @@ ${signature(opts.senderName, opts.senderEmail)}`;
       body,
       footerNote: `Sent by ${esc(opts.senderName)} at ${esc(site.name)}. Simply reply to this email to get in touch.`,
     }),
-    text: `${opts.body.trim()}\n\n--\n${opts.senderName}\n${site.name}\n${opts.senderEmail} · ${site.phone}`,
+    text: `${opts.body.trim()}\n\n--\n${opts.senderName}\n${site.name}\n${site.email} · ${site.phone}`,
   };
 }
 
@@ -386,7 +385,6 @@ export function newLeadEmail(opts: {
   subject: string;
   origin: string;
   senderName: string;
-  senderEmail: string;
 }) {
   const highlights = [
     {
@@ -421,7 +419,7 @@ export function newLeadEmail(opts: {
     )
     .join("");
 
-  const replyHref = `mailto:${opts.senderEmail}?subject=${encodeURIComponent(
+  const replyHref = `mailto:${site.email}?subject=${encodeURIComponent(
     `Re: ${opts.subject}`
   )}`;
 
@@ -443,7 +441,7 @@ export function newLeadEmail(opts: {
   <td style="padding:0 0 10px;">${button(opts.origin, "Visit our website", false)}</td>
 </tr></table>
 
-${signature(opts.senderName, opts.senderEmail)}`;
+${signature(opts.senderName)}`;
 
   return {
     html: layout({
@@ -464,7 +462,7 @@ ${signature(opts.senderName, opts.senderEmail)}`;
       "--",
       opts.senderName,
       site.name,
-      `${opts.senderEmail} · ${site.phone}`,
+      `${site.email} · ${site.phone}`,
     ].join("\n"),
   };
 }

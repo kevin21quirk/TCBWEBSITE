@@ -22,9 +22,8 @@ npm start          # or deploy to Vercel — zero config needed
 Both forms POST to `/api/contact`. To send real email:
 
 1. Create a [Resend](https://resend.com) account and verify your domain.
-2. Copy `.env.example` to `.env.local` and set `RESEND_API_KEY`,
-   `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL`. `LEAD_FROM_EMAIL` controls the
-   sender for lead emails sent from the admin CRM (defaults to hello@).
+2. Copy `.env.example` to `.env.local` and set `RESEND_API_KEY`.
+   All email goes to and from `site.email` (hello@) in `src/lib/content.ts`.
 
 Without `RESEND_API_KEY`, submissions are logged to the server console instead
 (useful for local development). A hidden honeypot field provides basic spam

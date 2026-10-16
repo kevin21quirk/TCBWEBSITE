@@ -181,22 +181,20 @@ export async function sendLeadEmail(
   const key = process.env.RESEND_API_KEY;
   if (!key) return { error: "Email sending isn't configured (RESEND_API_KEY)" };
   // Lead outreach goes from the shared hello@ inbox — replies land there too.
-  const from = process.env.LEAD_FROM_EMAIL ?? site.email;
-  const fromAddr = from.match(/<([^>]+)>/)?.[1]?.trim() ?? from;
   const origin = await siteOrigin();
   const mail =
     str(formData, "template") === "new-lead"
-      ? newLeadEmail({ body, subject, origin, senderName: site.senderName, senderEmail: fromAddr })
-      : salesEmail({ body, origin, senderName: site.senderName, senderEmail: fromAddr });
+      ? newLeadEmail({ body, subject, origin, senderName: site.senderName })
+      : salesEmail({ body, origin, senderName: site.senderName });
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: from.includes("<") ? from : `${site.senderName} at ${site.name} <${from}>`,
+        from: `${site.senderName} at ${site.name} <${site.email}>`,
         to: lead.email,
-        reply_to: fromAddr,
+        reply_to: site.email,
         subject,
         html: mail.html,
         text: mail.text,

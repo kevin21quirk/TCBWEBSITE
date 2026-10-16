@@ -45,8 +45,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const to = process.env.CONTACT_TO_EMAIL ?? site.email;
-  const from = process.env.CONTACT_FROM_EMAIL ?? site.email;
+  const to = site.email;
+  const from = site.email;
   // Absolute base for logo/links in emails. SITE_URL pins it to the live
   // domain; otherwise use the host that served this request.
   const origin = (
