@@ -211,6 +211,23 @@ export function linkedinSearches(l: Pick<Lead, "name" | "company" | "job_title" 
 
 export const EMAIL_TEMPLATES = [
   {
+    id: "new-lead",
+    label: "New lead intro",
+    subject: "Finding the right umbrella company for your next contract",
+    body: `Hi {firstName},
+
+I'm {senderName} from The Contractor Broker — we help contractors{companyClause} find the right umbrella company for their contracts, quickly and at no cost.
+
+Your choice of umbrella company affects your take-home pay, your compliance and how smoothly you're paid. We do the legwork for you: comparing fully vetted, HMRC-compliant providers and recommending the best fit for your rate, contract length and the benefits that matter to you.
+
+Whether you're about to start a new contract, or you'd simply like to check you're getting the best deal from your current umbrella, I'd be happy to run a free, no-obligation comparison with clear take-home pay figures.
+
+Could I give you a quick call this week? It usually takes around ten minutes — or feel free to reply here and we'll arrange a time that suits you.
+
+Kind regards,
+{senderName}`,
+  },
+  {
     id: "intro",
     label: "First contact",
     subject: "Your umbrella company enquiry — The Contractor Broker",

@@ -17,8 +17,9 @@ import {
   LOGGABLE_ACTIVITIES,
   type LeadStatus,
 } from "@/lib/crm";
+import { site } from "@/lib/content";
 import { sql } from "@/lib/db";
-import { salesEmail } from "@/lib/emails";
+import { newLeadEmail, salesEmail } from "@/lib/emails";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const opt = (fd: FormData, k: string) => str(fd, k) || null;
@@ -179,22 +180,23 @@ export async function sendLeadEmail(
 
   const key = process.env.RESEND_API_KEY;
   if (!key) return { error: "Email sending isn't configured (RESEND_API_KEY)" };
-  const from = process.env.CONTACT_FROM_EMAIL ?? "website@thecontractorbroker.com";
-  const mail = salesEmail({
-    body,
-    origin: await siteOrigin(),
-    senderName: user.name,
-    senderEmail: user.email,
-  });
+  // Lead outreach goes from the shared hello@ inbox — replies land there too.
+  const from = process.env.LEAD_FROM_EMAIL ?? site.email;
+  const fromAddr = from.match(/<([^>]+)>/)?.[1]?.trim() ?? from;
+  const origin = await siteOrigin();
+  const mail =
+    str(formData, "template") === "new-lead"
+      ? newLeadEmail({ body, subject, origin, senderName: user.name, senderEmail: fromAddr })
+      : salesEmail({ body, origin, senderName: user.name, senderEmail: fromAddr });
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: from.includes("<") ? from : `${user.name} at The Contractor Broker <${from}>`,
+        from: from.includes("<") ? from : `${site.name} <${from}>`,
         to: lead.email,
-        reply_to: user.email,
+        reply_to: fromAddr,
         subject,
         html: mail.html,
         text: mail.text,
@@ -208,7 +210,7 @@ export async function sendLeadEmail(
     return { error: "Couldn't reach the email provider. Try again." };
   }
 
-  await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'email', ${`Sent: ${subject}\n\n${body}`})`;
+  await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'email', ${`Sent: ${subject}\n\n${mail.text}`})`;
   await sql`UPDATE leads SET last_contacted_at = now(), updated_at = now() WHERE id = ${leadId}`;
   // First outbound email moves a new lead into the pipeline.
   if (lead.status === "new") {

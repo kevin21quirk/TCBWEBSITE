@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { sendLeadEmail } from "@/app/admin/actions";
+import { site } from "@/lib/content";
 import { EMAIL_TEMPLATES, fillTemplate } from "@/lib/crm";
 
 const inputClass =
@@ -26,12 +27,14 @@ export default function EmailComposer({
   );
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [branded, setBranded] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (state?.ok) {
       setSubject("");
       setBody("");
+      setBranded(false);
     }
   }, [state]);
 
@@ -41,6 +44,7 @@ export default function EmailComposer({
     const lead = { name: leadName, company };
     setSubject(fillTemplate(t.subject, lead, senderName));
     setBody(fillTemplate(t.body, lead, senderName));
+    setBranded(t.id === "new-lead");
   };
 
   return (
@@ -57,10 +61,26 @@ export default function EmailComposer({
           </button>
         ))}
       </div>
+      {branded && <input type="hidden" name="template" value="new-lead" />}
       <p className="text-xs text-slate-500">
-        To: <span className="font-semibold text-ink">{leadEmail}</span> · replies
-        come back to you
+        To: <span className="font-semibold text-ink">{leadEmail}</span> · from{" "}
+        <span className="font-semibold text-ink">{site.email}</span> — replies
+        land there too
       </p>
+      {branded && (
+        <div className="rounded-xl border border-brand/20 bg-brand/5 px-4 py-2.5 text-xs leading-relaxed text-slate-600">
+          Sends as our branded introduction: the message below plus a
+          &ldquo;why choose us&rdquo; section and reply, call and website
+          buttons.{" "}
+          <button
+            type="button"
+            onClick={() => setBranded(false)}
+            className="font-semibold text-brand underline underline-offset-2"
+          >
+            Send as a plain email instead
+          </button>
+        </div>
+      )}
       <input
         name="subject"
         required

@@ -338,13 +338,19 @@ ${detailRows}
 
 /* ---------- one-to-one sales email sent from the CRM ---------- */
 
-export function salesEmail(opts: {
-  body: string;
-  origin: string;
-  senderName: string;
-  senderEmail: string;
-}) {
-  const paragraphs = opts.body
+const signature = (senderName: string, senderEmail: string) => `
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:12px;border-top:1px solid ${LINE};">
+<tr><td style="padding-top:16px;font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};">
+  <strong style="color:${INK};">${esc(senderName)}</strong><br />
+  ${esc(site.name)}<br />
+  <a href="mailto:${esc(senderEmail)}" style="color:${BRAND};text-decoration:none;">${esc(senderEmail)}</a>
+  &nbsp;&middot;&nbsp;
+  <a href="${esc(site.phoneHref)}" style="color:${BRAND};text-decoration:none;">${esc(site.phone)}</a>
+</td></tr>
+</table>`;
+
+const paragraphs = (body: string) =>
+  body
     .trim()
     .split(/\n{2,}/)
     .map(
@@ -353,16 +359,14 @@ export function salesEmail(opts: {
     )
     .join("");
 
-  const body = `${paragraphs}
-<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:12px;border-top:1px solid ${LINE};">
-<tr><td style="padding-top:16px;font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};">
-  <strong style="color:${INK};">${esc(opts.senderName)}</strong><br />
-  ${esc(site.name)}<br />
-  <a href="mailto:${esc(opts.senderEmail)}" style="color:${BRAND};text-decoration:none;">${esc(opts.senderEmail)}</a>
-  &nbsp;&middot;&nbsp;
-  <a href="${esc(site.phoneHref)}" style="color:${BRAND};text-decoration:none;">${esc(site.phone)}</a>
-</td></tr>
-</table>`;
+export function salesEmail(opts: {
+  body: string;
+  origin: string;
+  senderName: string;
+  senderEmail: string;
+}) {
+  const body = `${paragraphs(opts.body)}
+${signature(opts.senderName, opts.senderEmail)}`;
 
   return {
     html: layout({
@@ -372,6 +376,96 @@ export function salesEmail(opts: {
       footerNote: `Sent by ${esc(opts.senderName)} at ${esc(site.name)}. Simply reply to this email to get in touch.`,
     }),
     text: `${opts.body.trim()}\n\n--\n${opts.senderName}\n${site.name}\n${opts.senderEmail} · ${site.phone}`,
+  };
+}
+
+/* ---------- branded introduction email for newly identified leads ---------- */
+
+export function newLeadEmail(opts: {
+  body: string;
+  subject: string;
+  origin: string;
+  senderName: string;
+  senderEmail: string;
+}) {
+  const highlights = [
+    {
+      title: "A completely free service",
+      body: "Our comparison and advice cost you nothing — no fees, no obligation.",
+    },
+    {
+      title: "Fully vetted, compliant partners",
+      body: "Every umbrella company we recommend is checked for HMRC compliance, insurance and service standards.",
+    },
+    {
+      title: "Tailored to your contract",
+      body: "Clear take-home pay figures and a recommendation matched to your rate, contract length and the benefits that matter to you.",
+    },
+    {
+      title: "Over 25 years of expertise",
+      body: "Specialist knowledge across umbrella, payroll and IR35 — so nothing gets missed.",
+    },
+  ];
+
+  const highlightRows = highlights
+    .map(
+      (h) => `<tr>
+  <td width="30" valign="top" style="padding:0 0 14px;">
+    <div style="width:20px;height:20px;line-height:20px;border-radius:50%;background:${BRAND};color:#ffffff;font-family:${FONT};font-size:12px;font-weight:700;text-align:center;">&#10003;</div>
+  </td>
+  <td valign="top" style="padding:0 0 14px;font-family:${FONT};">
+    <p style="margin:0;font-size:14px;font-weight:700;color:${INK};">${esc(h.title)}</p>
+    <p style="margin:2px 0 0;font-size:14px;line-height:21px;color:${MUTED};">${esc(h.body)}</p>
+  </td>
+</tr>`
+    )
+    .join("");
+
+  const replyHref = `mailto:${opts.senderEmail}?subject=${encodeURIComponent(
+    `Re: ${opts.subject}`
+  )}`;
+
+  const body = `${paragraphs(opts.body)}
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 26px;background:${SOFT};border:1px solid ${LINE};border-radius:12px;">
+<tr><td style="padding:20px 22px 6px;font-family:${FONT};">
+  <p style="margin:0 0 14px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${MUTED};">Why contractors choose us</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${highlightRows}</table>
+  <p style="margin:2px 0 14px;font-size:13px;line-height:20px;">
+    <a href="${esc(opts.origin)}/services" style="color:${BRAND};font-weight:600;text-decoration:none;">See everything we help with &rarr;</a>
+  </p>
+</td></tr>
+</table>
+
+<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+  <td style="padding:0 10px 10px 0;">${button(replyHref, "Reply to this email")}</td>
+  <td style="padding:0 10px 10px 0;">${button(site.phoneHref, `Call ${site.phone}`, false)}</td>
+  <td style="padding:0 0 10px;">${button(opts.origin, "Visit our website", false)}</td>
+</tr></table>
+
+${signature(opts.senderName, opts.senderEmail)}`;
+
+  return {
+    html: layout({
+      origin: opts.origin,
+      preheader:
+        "A free, independent umbrella company comparison — find the best fit for your contract in about 10 minutes.",
+      body,
+      footerNote: `You received this introduction from ${esc(site.name)} because we think our free umbrella company comparison could be useful to you. Simply reply to this email to chat — or to let us know you'd rather not hear from us again.`,
+    }),
+    text: [
+      opts.body.trim(),
+      "",
+      "WHY CONTRACTORS CHOOSE US",
+      ...highlights.map((h) => `- ${h.title}: ${h.body}`),
+      "",
+      `Reply to this email, call ${site.phone}, or visit ${opts.origin} to get started.`,
+      "",
+      "--",
+      opts.senderName,
+      site.name,
+      `${opts.senderEmail} · ${site.phone}`,
+    ].join("\n"),
   };
 }
 
