@@ -15,11 +15,16 @@ import {
   CONTACT_ACTIVITY_TYPES,
   LEAD_STATUSES,
   LOGGABLE_ACTIVITIES,
+  fillTemplate,
   type LeadStatus,
 } from "@/lib/crm";
 import { site } from "@/lib/content";
 import { sql } from "@/lib/db";
-import { brandedEmail, salesEmail } from "@/lib/emails";
+import {
+  SEQUENCE_STEPS,
+  deliverLeadEmail,
+  templateForLead,
+} from "@/lib/outreach";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const opt = (fd: FormData, k: string) => str(fd, k) || null;
@@ -166,22 +171,19 @@ const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 const MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024;
 
-/** EMAIL_TEMPLATES ids that send as the fully branded outreach email. */
-const BRANDED_EMAIL_TEMPLATES = new Set(["new-lead", "follow-up"]);
-
 /** Send a one-to-one email from the CRM via Resend and log it. */
 export async function sendLeadEmail(
   leadId: number,
   _prev: { ok?: boolean; error?: string } | undefined,
   formData: FormData
-) {
+): Promise<{ ok?: boolean; error?: string }> {
   const user = await requireUser();
   const subject = str(formData, "subject");
   const body = str(formData, "body");
   if (!subject || !body) return { error: "Subject and message are required" };
 
-  const lead = (await sql`SELECT email, status FROM leads WHERE id = ${leadId}`)[0] as
-    | { email: string | null; status: LeadStatus }
+  const lead = (await sql`SELECT id, email, name, company, status FROM leads WHERE id = ${leadId}`)[0] as
+    | { id: number; email: string | null; name: string; company: string | null; status: LeadStatus }
     | undefined;
   if (!lead?.email) return { error: "This lead has no email address" };
 
@@ -211,54 +213,156 @@ export async function sendLeadEmail(
     attachments.push({ filename: name, content: Buffer.from(hex, "hex").toString("base64") });
   }
 
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return { error: "Email sending isn't configured (RESEND_API_KEY)" };
-  // Lead outreach goes from the shared hello@ inbox — replies land there too.
-  const origin = await siteOrigin();
-  const mail = BRANDED_EMAIL_TEMPLATES.has(str(formData, "template"))
-    ? brandedEmail({ body, subject, origin, senderName: site.senderName })
-    : salesEmail({ body, origin, senderName: site.senderName });
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: `${site.senderName} at ${site.name} <${site.email}>`,
-        to: lead.email,
-        reply_to: site.email,
-        subject,
-        html: mail.html,
-        text: mail.text,
-        ...(attachments.length ? { attachments } : {}),
-      }),
-    });
-    if (!res.ok) {
-      console.error("Resend error", res.status, await res.text());
-      return { error: "The email provider rejected the message — check Resend." };
-    }
-    if (uploadIds.length) {
-      await sql`DELETE FROM attachment_uploads WHERE upload_id = ANY(${uploadIds})`;
-    }
-  } catch {
-    return { error: "Couldn't reach the email provider. Try again." };
-  }
-
-  const logBody = `Sent: ${subject}\n\n${mail.text}${
-    attachments.length
-      ? `\n\nAttachments: ${attachments.map((a) => a.filename).join(", ")}`
-      : ""
-  }`;
-  await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'email', ${logBody})`;
-  await sql`UPDATE leads SET last_contacted_at = now(), updated_at = now() WHERE id = ${leadId}`;
-  // First outbound email moves a new lead into the pipeline.
-  if (lead.status === "new") {
-    await sql`UPDATE leads SET status = 'contacted' WHERE id = ${leadId}`;
-    await sql`UPDATE follow_ups SET done = true, done_at = now() WHERE lead_id = ${leadId} AND auto = true AND done = false`;
-    await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'status', 'Status changed to contacted')`;
+  const result = await deliverLeadEmail({
+    lead: { ...lead, email: lead.email },
+    subject,
+    body,
+    template: str(formData, "template") || undefined,
+    userId: user.id,
+    origin: await siteOrigin(),
+    attachments,
+    activityLabel: `Sent${
+      attachments.length
+        ? ` (attachments: ${attachments.map((a) => a.filename).join(", ")})`
+        : ""
+    }`,
+  });
+  if (result.error) return result;
+  if (uploadIds.length) {
+    await sql`DELETE FROM attachment_uploads WHERE upload_id = ANY(${uploadIds})`;
   }
   revalidateLead(leadId);
   revalidatePath("/admin/calendar");
+  return { ok: true };
+}
+
+/** Bulk send: one campaign row + a personalised email per selected lead. */
+export async function sendCampaign(
+  _prev: { ok?: boolean; sent?: number; failed?: number; skipped?: number; error?: string } | undefined,
+  formData: FormData
+): Promise<{ ok?: boolean; sent?: number; failed?: number; skipped?: number; error?: string }> {
+  const user = await requireUser();
+  const name =
+    str(formData, "name") ||
+    `Outreach ${new Date().toLocaleDateString("en-GB")}`;
+  const template = str(formData, "template") || undefined;
+  const subject = str(formData, "subject");
+  const body = str(formData, "body");
+  if (!subject || !body) return { error: "Subject and message are required" };
+  const ids = formData
+    .getAll("lead_ids")
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n > 0)
+    .slice(0, 200);
+  if (!ids.length) return { error: "Select at least one lead" };
+
+  const leads = (await sql`
+    SELECT id, name, email, company, status FROM leads WHERE id = ANY(${ids}::int[])`) as {
+    id: number; name: string; email: string | null; company: string | null; status: LeadStatus;
+  }[];
+  const mailable = leads.filter(
+    (l): l is typeof l & { email: string } => Boolean(l.email)
+  );
+  const skipped = leads.length - mailable.length;
+
+  const campaign = (
+    await sql`
+      INSERT INTO campaigns (name, template, subject, body, created_by, total)
+      VALUES (${name}, ${template ?? "custom"}, ${subject}, ${body}, ${user.id}, ${mailable.length})
+      RETURNING id`
+  )[0] as { id: number };
+
+  const origin = await siteOrigin();
+  let sent = 0;
+  let failed = 0;
+  for (let i = 0; i < mailable.length; i += 5) {
+    const results = await Promise.all(
+      mailable.slice(i, i + 5).map((lead) =>
+        deliverLeadEmail({
+          lead,
+          subject: fillTemplate(subject, lead, site.senderName),
+          body: fillTemplate(body, lead, site.senderName),
+          template,
+          userId: user.id,
+          origin,
+          campaignId: campaign.id,
+          activityLabel: `Campaign "${name}" — sent`,
+        }).then(
+          (r) => !r.error,
+          () => false
+        )
+      )
+    );
+    sent += results.filter(Boolean).length;
+    failed += results.filter((r) => !r).length;
+  }
+  await sql`UPDATE campaigns SET sent = ${sent}, failed = ${failed}, skipped = ${skipped} WHERE id = ${campaign.id}`;
+  revalidatePath("/admin/outreach");
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+  return { ok: true, sent, failed, skipped };
+}
+
+/** Enrol a lead in the intro sequence — step 1 sends now, the cron chases. */
+export async function enrollSequence(
+  leadId: number,
+  _prev: { ok?: boolean; error?: string } | undefined,
+  _formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const user = await requireUser();
+  const lead = (await sql`
+    SELECT id, name, email, company, status FROM leads WHERE id = ${leadId}`)[0] as
+    | { id: number; name: string; email: string | null; company: string | null; status: LeadStatus }
+    | undefined;
+  if (!lead?.email) return { error: "This lead has no email address" };
+
+  const running = await sql`
+    SELECT id FROM sequence_enrolments WHERE lead_id = ${leadId} AND active = true`;
+  if (running.length) return { error: "A sequence is already running" };
+
+  const first = SEQUENCE_STEPS[0];
+  const t = templateForLead(first.template, lead);
+  if (!t) return { error: "Sequence template missing" };
+  const result = await deliverLeadEmail({
+    lead: { ...lead, email: lead.email },
+    subject: t.subject,
+    body: t.body,
+    template: first.template,
+    userId: user.id,
+    origin: await siteOrigin(),
+    sequenceStep: 0,
+  });
+  if (result.error) return result;
+
+  const next = SEQUENCE_STEPS[1];
+  const nextAt = new Date(
+    Date.now() + (next?.delayDays ?? 3) * 864e5
+  ).toISOString();
+  await sql`
+    INSERT INTO sequence_enrolments (lead_id, step, next_send_at, created_by)
+    VALUES (${leadId}, 1, ${nextAt}, ${user.id})
+    ON CONFLICT (lead_id) DO UPDATE SET
+      step = 1, next_send_at = ${nextAt}, active = true, created_by = ${user.id}`;
+  await sql`
+    INSERT INTO lead_activities (lead_id, user_id, type, body)
+    VALUES (${leadId}, ${user.id}, 'note', 'Enrolled in email sequence (intro + 2 chases)')`;
+  revalidateLead(leadId);
+  revalidatePath("/admin/outreach");
+  return { ok: true };
+}
+
+export async function stopSequence(
+  leadId: number,
+  _prev: { ok?: boolean; error?: string } | undefined,
+  _formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const user = await requireUser();
+  await sql`UPDATE sequence_enrolments SET active = false WHERE lead_id = ${leadId} AND active = true`;
+  await sql`
+    INSERT INTO lead_activities (lead_id, user_id, type, body)
+    VALUES (${leadId}, ${user.id}, 'note', 'Email sequence stopped')`;
+  revalidateLead(leadId);
+  revalidatePath("/admin/outreach");
   return { ok: true };
 }
 

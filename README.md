@@ -29,6 +29,21 @@ Without `RESEND_API_KEY`, submissions are logged to the server console instead
 (useful for local development). A hidden honeypot field provides basic spam
 protection; add Turnstile/reCAPTCHA if spam becomes an issue.
 
+## Admin outreach centre
+
+The CRM (`/admin`) can send one-to-one emails (with attachments), bulk
+**campaigns** and automated **follow-up sequences** — all from
+`Joey at The Contractor Broker <hello@thecontractorbroker.com>`.
+
+- **Campaigns & sequences**: `/admin/outreach`. Enrol a lead from its profile;
+  the sequence (intro → +3d follow-up → +4d chase) sends itself via the daily
+  cron at `/api/cron/sequences` (configured in `vercel.json`, protected by
+  `CRON_SECRET`).
+- **Open/click tracking**: add a Resend webhook pointing at
+  `/api/webhooks/resend` (events `email.opened`, `email.clicked`,
+  `email.bounced`) and set `RESEND_WEBHOOK_SECRET`. Opens and clicks show on
+  lead timelines, the warm list and campaign stats.
+
 ## Structure
 
 ```

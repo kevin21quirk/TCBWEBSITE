@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DeleteLeadButton from "@/app/admin/(app)/leads/[id]/DeleteLeadButton";
 import EmailComposer from "@/app/admin/(app)/leads/[id]/EmailComposer";
+import SequenceControls from "@/app/admin/(app)/outreach/SequenceControls";
 import {
   addFollowUp,
   assignLead,
@@ -29,6 +30,7 @@ import {
   type LeadActivity,
 } from "@/lib/crm";
 import { sql } from "@/lib/db";
+import { SEQUENCE_STEPS } from "@/lib/outreach";
 
 export const dynamic = "force-dynamic";
 
@@ -76,14 +78,35 @@ export default async function LeadDetailPage({
   if (Number.isNaN(leadId)) notFound();
   const me = await requireUser();
 
-  const [leads, staff, activity, followUps] = await Promise.all([
-    sql`SELECT l.*, u.name AS assignee_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id = ${leadId}`,
-    sql`SELECT id, name FROM users WHERE active = true ORDER BY name`,
-    sql`SELECT a.*, u.name AS user_name FROM lead_activities a LEFT JOIN users u ON u.id = a.user_id WHERE a.lead_id = ${leadId} ORDER BY a.created_at DESC`,
-    sql`SELECT f.*, u.name AS assignee_name FROM follow_ups f LEFT JOIN users u ON u.id = f.assigned_to WHERE f.lead_id = ${leadId} ORDER BY f.done, f.due_at`,
-  ]);
+  const [leads, staff, activity, followUps, enrolments, sendStats] =
+    await Promise.all([
+      sql`SELECT l.*, u.name AS assignee_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id = ${leadId}`,
+      sql`SELECT id, name FROM users WHERE active = true ORDER BY name`,
+      sql`SELECT a.*, u.name AS user_name FROM lead_activities a LEFT JOIN users u ON u.id = a.user_id WHERE a.lead_id = ${leadId} ORDER BY a.created_at DESC`,
+      sql`SELECT f.*, u.name AS assignee_name FROM follow_ups f LEFT JOIN users u ON u.id = f.assigned_to WHERE f.lead_id = ${leadId} ORDER BY f.done, f.due_at`,
+      sql`SELECT step, next_send_at FROM sequence_enrolments WHERE lead_id = ${leadId} AND active = true LIMIT 1`,
+      sql`SELECT count(*)::int AS sends,
+            count(*) FILTER (WHERE open_count > 0)::int AS opened,
+            coalesce(sum(click_count), 0)::int AS clicks,
+            max(opened_at) AS last_open
+          FROM email_sends WHERE lead_id = ${leadId}`,
+    ]);
   const lead = leads[0] as Lead | undefined;
   if (!lead) notFound();
+  const enrolment = enrolments[0] as
+    | { step: number; next_send_at: string | null }
+    | undefined;
+  const sends = (sendStats[0] ?? {
+    sends: 0,
+    opened: 0,
+    clicks: 0,
+    last_open: null,
+  }) as {
+    sends: number;
+    opened: number;
+    clicks: number;
+    last_open: string | null;
+  };
 
   // Pages this person viewed on the website (matched by IP).
   const journey = lead.ip
@@ -368,6 +391,52 @@ export default async function LeadDetailPage({
                 company={lead.company}
                 senderName={site.senderName}
               />
+            </div>
+          )}
+
+          {/* automated follow-up sequence + email engagement */}
+          {lead.email && (
+            <div className={cardClass}>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+                Automated Follow-up
+              </h2>
+              <p className="mb-4 mt-1 text-xs leading-relaxed text-slate-500">
+                {SEQUENCE_STEPS.length}-step email sequence — branded intro now,
+                then automatic chases until they convert or you stop it. Runs
+                from hello@thecontractorbroker.com.
+              </p>
+              <SequenceControls
+                leadId={leadId}
+                step={enrolment?.step ?? null}
+                nextSendAt={enrolment?.next_send_at ?? null}
+                totalSteps={SEQUENCE_STEPS.length}
+              />
+              {sends.sends > 0 && (
+                <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-100 pt-4 text-[11px] text-slate-500">
+                  <span>
+                    <span className="font-bold text-ink">{sends.sends}</span>{" "}
+                    email{sends.sends === 1 ? "" : "s"} sent
+                  </span>
+                  <span>
+                    <span className="font-bold text-emerald-600">
+                      {sends.opened}
+                    </span>{" "}
+                    opened
+                  </span>
+                  <span>
+                    <span className="font-bold text-sky-600">{sends.clicks}</span>{" "}
+                    link clicks
+                  </span>
+                  {sends.last_open && (
+                    <span>
+                      last open{" "}
+                      <span className="font-bold text-ink">
+                        {fmt.format(new Date(sends.last_open))}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

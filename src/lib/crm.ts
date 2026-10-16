@@ -110,6 +110,9 @@ export const ACTIVITY_STYLES: Record<string, { dot: string; verb: string }> = {
   status: { dot: "bg-amber-500", verb: "" },
   assign: { dot: "bg-sky-500", verb: "" },
   follow_up: { dot: "bg-sky-500", verb: "" },
+  open: { dot: "bg-emerald-500", verb: "" },
+  click: { dot: "bg-sky-500", verb: "" },
+  bounce: { dot: "bg-red-500", verb: "" },
   update: { dot: "bg-slate-400", verb: "updated details" },
 };
 

@@ -108,6 +108,44 @@ const statements = [
     UNIQUE (upload_id, chunk_index)
   )`,
   `CREATE INDEX IF NOT EXISTS attachment_uploads_upload_idx ON attachment_uploads(upload_id)`,
+  `CREATE TABLE IF NOT EXISTS campaigns (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    template TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_by INT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    total INT NOT NULL DEFAULT 0,
+    sent INT NOT NULL DEFAULT 0,
+    failed INT NOT NULL DEFAULT 0,
+    skipped INT NOT NULL DEFAULT 0
+  )`,
+  `CREATE TABLE IF NOT EXISTS email_sends (
+    id BIGSERIAL PRIMARY KEY,
+    resend_id TEXT,
+    lead_id INT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    campaign_id INT REFERENCES campaigns(id) ON DELETE SET NULL,
+    subject TEXT,
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    open_count INT NOT NULL DEFAULT 0,
+    opened_at TIMESTAMPTZ,
+    click_count INT NOT NULL DEFAULT 0,
+    clicked_at TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS email_sends_resend_idx ON email_sends(resend_id)`,
+  `CREATE INDEX IF NOT EXISTS email_sends_lead_idx ON email_sends(lead_id)`,
+  `CREATE TABLE IF NOT EXISTS sequence_enrolments (
+    id SERIAL PRIMARY KEY,
+    lead_id INT NOT NULL UNIQUE REFERENCES leads(id) ON DELETE CASCADE,
+    step INT NOT NULL DEFAULT 0,
+    next_send_at TIMESTAMPTZ NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_by INT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS seq_enrol_due_idx ON sequence_enrolments(next_send_at) WHERE active = true`,
 ];
 
 for (const s of statements) {
