@@ -53,8 +53,9 @@ export function isConfigured() {
   return Boolean(process.env.COMPANIES_HOUSE_API_KEY);
 }
 
-const ukDate = (d: Date) =>
-  `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+// Companies House date params take ISO format (YYYY-MM-DD).
+const isoDate = (d: Date) =>
+  `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 
 function formatAddress(a?: {
   address_line_1?: string;
@@ -95,8 +96,8 @@ export async function searchCompanies(opts: {
   params.set("size", String(Math.min(opts.size ?? 100, 100)));
   if (opts.incorporatedDays) {
     const from = new Date(Date.now() - opts.incorporatedDays * 86400000);
-    params.set("incorporated_from", ukDate(from));
-    params.set("incorporated_to", ukDate(new Date()));
+    params.set("incorporated_from", isoDate(from));
+    params.set("incorporated_to", isoDate(new Date()));
   }
 
   let res: Response;
