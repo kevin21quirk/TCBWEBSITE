@@ -41,6 +41,11 @@ export default async function RadarPage({
   const loc = (sp.loc ?? "").trim();
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const sic = SIC_PRESETS.some((p) => p.id === sp.sic) ? sp.sic! : "contractors";
+  // Codes the current scan filters on — companies often register several
+  // SIC codes, so we highlight the ones that made each result match.
+  const matchCodes = new Set<string>(
+    SIC_PRESETS.find((p) => p.id === sic)?.codes ?? []
+  );
   const scanning = sp.scan === "1";
   const peopleParam = (sp.people ?? "").trim();
   const currentQs = `/admin/radar?${new URLSearchParams({
@@ -221,6 +226,8 @@ export default async function RadarPage({
               {q && <>matching &ldquo;{q}&rdquo; · </>}
               {loc && <>{loc} · </>}
               incorporated last {days} days{result.items.length < result.total ? ` · showing first ${result.items.length}` : ""}
+              {" · "}highlighted SIC codes are the ones that matched — companies can
+              register several
             </p>
           </div>
           <div className="divide-y divide-slate-100">
@@ -251,14 +258,24 @@ export default async function RadarPage({
                       )}
                       {p.sicCodes.length > 0 && (
                         <div className="mt-1.5 flex flex-wrap gap-1">
-                          {p.sicCodes.map((s) => (
-                            <span
-                              key={s}
-                              className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500"
-                            >
-                              {s} {SIC_LABELS[s] ?? ""}
-                            </span>
-                          ))}
+                          {[...p.sicCodes]
+                            .sort(
+                              (a, b) =>
+                                Number(matchCodes.has(b)) -
+                                Number(matchCodes.has(a))
+                            )
+                            .map((s) => (
+                              <span
+                                key={s}
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                  matchCodes.has(s)
+                                    ? "bg-brand/10 text-brand ring-1 ring-brand/30"
+                                    : "bg-slate-100 text-slate-500"
+                                }`}
+                              >
+                                {s} {SIC_LABELS[s] ?? ""}
+                              </span>
+                            ))}
                         </div>
                       )}
                     </div>
