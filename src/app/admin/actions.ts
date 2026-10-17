@@ -173,6 +173,43 @@ const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 const MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024;
 
+// Files upload in chunks to /api/attachments ahead of submit — the form
+// only carries their upload ids, which stay well under the platform's
+// request-size cap no matter how large the files are.
+async function collectAttachments(
+  formData: FormData,
+  userId: number
+): Promise<{
+  attachments: { filename: string; content: string }[];
+  uploadIds: string[];
+  error?: string;
+}> {
+  const uploadIds = formData.getAll("attachment_id").map(String).filter(Boolean);
+  const uploadNames = formData.getAll("attachment_name").map(String);
+  const attachments: { filename: string; content: string }[] = [];
+  let totalBytes = 0;
+  const fail = (error: string) => ({ attachments, uploadIds, error });
+  for (const [i, uploadId] of uploadIds.entries()) {
+    if (attachments.length >= MAX_ATTACHMENTS)
+      return fail(`Up to ${MAX_ATTACHMENTS} attachments per email`);
+    const name = uploadNames[i] || "attachment";
+    const rows = await sql`
+      SELECT data_hex FROM attachment_uploads
+      WHERE upload_id = ${uploadId} AND user_id = ${userId}
+      ORDER BY chunk_index`;
+    const hex = rows.map((r) => r.data_hex as string).join("");
+    if (!hex) return fail(`"${name}" hasn't finished uploading — remove it and try again`);
+    const size = hex.length / 2;
+    if (size > MAX_ATTACHMENT_BYTES)
+      return fail(`"${name}" is over the 20 MB per-file limit`);
+    totalBytes += size;
+    if (totalBytes > MAX_ATTACHMENTS_TOTAL)
+      return fail("Attachments are over the 25 MB total limit");
+    attachments.push({ filename: name, content: Buffer.from(hex, "hex").toString("base64") });
+  }
+  return { attachments, uploadIds };
+}
+
 /** Send a one-to-one email from the CRM via Resend and log it. */
 export async function sendLeadEmail(
   leadId: number,
@@ -189,31 +226,8 @@ export async function sendLeadEmail(
     | undefined;
   if (!lead?.email) return { error: "This lead has no email address" };
 
-  // Files upload in chunks to /api/attachments ahead of submit — the form
-  // only carries their upload ids, which stay well under the platform's
-  // request-size cap no matter how large the files are.
-  const uploadIds = formData.getAll("attachment_id").map(String).filter(Boolean);
-  const uploadNames = formData.getAll("attachment_name").map(String);
-  const attachments: { filename: string; content: string }[] = [];
-  let totalBytes = 0;
-  for (const [i, uploadId] of uploadIds.entries()) {
-    if (attachments.length >= MAX_ATTACHMENTS)
-      return { error: `Up to ${MAX_ATTACHMENTS} attachments per email` };
-    const name = uploadNames[i] || "attachment";
-    const rows = await sql`
-      SELECT data_hex FROM attachment_uploads
-      WHERE upload_id = ${uploadId} AND user_id = ${user.id}
-      ORDER BY chunk_index`;
-    const hex = rows.map((r) => r.data_hex as string).join("");
-    if (!hex) return { error: `"${name}" hasn't finished uploading — remove it and try again` };
-    const size = hex.length / 2;
-    if (size > MAX_ATTACHMENT_BYTES)
-      return { error: `"${name}" is over the 20 MB per-file limit` };
-    totalBytes += size;
-    if (totalBytes > MAX_ATTACHMENTS_TOTAL)
-      return { error: "Attachments are over the 25 MB total limit" };
-    attachments.push({ filename: name, content: Buffer.from(hex, "hex").toString("base64") });
-  }
+  const { attachments, uploadIds, error } = await collectAttachments(formData, user.id);
+  if (error) return { error };
 
   const result = await deliverLeadEmail({
     lead: { ...lead, email: lead.email },
@@ -258,6 +272,9 @@ export async function sendCampaign(
     .slice(0, 200);
   if (!ids.length) return { error: "Select at least one lead" };
 
+  const { attachments, uploadIds, error } = await collectAttachments(formData, user.id);
+  if (error) return { error };
+
   const leads = (await sql`
     SELECT id, name, email, company, status FROM leads WHERE id = ANY(${ids}::int[])`) as {
     id: number; name: string; email: string | null; company: string | null; status: LeadStatus;
@@ -288,7 +305,12 @@ export async function sendCampaign(
           userId: user.id,
           origin,
           campaignId: campaign.id,
-          activityLabel: `Campaign "${name}" — sent`,
+          attachments,
+          activityLabel: `Campaign "${name}" — sent${
+            attachments.length
+              ? ` (attachments: ${attachments.map((a) => a.filename).join(", ")})`
+              : ""
+          }`,
         }).then(
           (r) => !r.error,
           () => false
@@ -299,6 +321,9 @@ export async function sendCampaign(
     failed += results.filter((r) => !r).length;
   }
   await sql`UPDATE campaigns SET sent = ${sent}, failed = ${failed}, skipped = ${skipped} WHERE id = ${campaign.id}`;
+  if (uploadIds.length) {
+    await sql`DELETE FROM attachment_uploads WHERE upload_id = ANY(${uploadIds})`;
+  }
   revalidatePath("/admin/outreach");
   revalidatePath("/admin/leads");
   revalidatePath("/admin");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { sendCampaign, sendTestEmail } from "@/app/admin/actions";
 import { EMAIL_TEMPLATES, STATUS_STYLES, type LeadStatus } from "@/lib/crm";
 
@@ -26,6 +26,16 @@ type ComposerLead = {
 const TEMPLATE_CHOICES = ["new-lead", "follow-up", "intro", "chase"] as const;
 const BRANDED = new Set(["new-lead", "follow-up"]);
 
+const CHUNK = 1024 * 1024;
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+
+type PickedFile = {
+  id: string;
+  name: string;
+  size: number;
+  status: "uploading" | "ready" | "failed";
+};
+
 export default function CampaignComposer({ leads }: { leads: ComposerLead[] }) {
   const [state, action, pending] = useActionState(sendCampaign, undefined);
   const [templateId, setTemplateId] = useState<string>("new-lead");
@@ -43,6 +53,68 @@ export default function CampaignComposer({ leads }: { leads: ComposerLead[] }) {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [files, setFiles] = useState<PickedFile[]>([]);
+  const [fileError, setFileError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const uploading = files.some((f) => f.status === "uploading");
+
+  useEffect(() => {
+    if (state?.ok) {
+      setFiles([]);
+      setFileError("");
+    }
+  }, [state]);
+
+  // Files upload in 1 MB chunks to /api/attachments so the request never
+  // hits the platform's ~4.5 MB body cap — the form sends only upload ids.
+  const uploadFile = async (file: File, id: string) => {
+    for (let i = 0, n = Math.ceil(file.size / CHUNK); i < n; i++) {
+      const res = await fetch(
+        `/api/attachments?upload=${id}&name=${encodeURIComponent(file.name)}&chunk=${i}`,
+        { method: "POST", body: file.slice(i * CHUNK, (i + 1) * CHUNK) }
+      );
+      if (!res.ok) throw new Error("upload failed");
+    }
+  };
+
+  const addFiles = async (list: File[]) => {
+    setFileError("");
+    const additions: { id: string; file: File }[] = [];
+    const next = [...files];
+    for (const f of list) {
+      if (next.length >= 5) break;
+      if (f.size > MAX_FILE_BYTES) {
+        setFileError(`"${f.name}" is over the 20 MB per-file limit`);
+        continue;
+      }
+      if (next.some((x) => x.name === f.name && x.size === f.size)) continue;
+      const id = crypto.randomUUID();
+      next.push({ id, name: f.name, size: f.size, status: "uploading" });
+      additions.push({ id, file: f });
+    }
+    setFiles(next);
+    for (const { id, file } of additions) {
+      const ok = await uploadFile(file, id).then(
+        () => true,
+        () => false
+      );
+      setFiles((prev) =>
+        prev.map((x) =>
+          x.id === id ? { ...x, status: ok ? "ready" : "failed" } : x
+        )
+      );
+    }
+  };
+
+  const removeFile = (id: string) => {
+    setFiles((prev) => prev.filter((x) => x.id !== id));
+    fetch(`/api/attachments?upload=${id}`, { method: "DELETE" }).catch(
+      () => {}
+    );
+  };
+
+  const fmtSize = (n: number) =>
+    n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.ceil(n / 1e3))} KB`;
 
   const loadPreview = async () => {
     if (previewHtml) {
@@ -198,6 +270,77 @@ export default function CampaignComposer({ leads }: { leads: ComposerLead[] }) {
           filled in per lead automatically.
         </p>
       </div>
+
+      {/* attachments */}
+      <div>
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            // Snapshot before clearing — input.files is a live FileList,
+            // so resetting the input would empty it first.
+            const list = Array.from(e.target.files ?? []);
+            e.target.value = "";
+            void addFiles(list);
+          }}
+        />
+        {files
+          .filter((f) => f.status === "ready")
+          .map((f) => (
+            <span key={f.id}>
+              <input type="hidden" name="attachment_id" value={f.id} />
+              <input type="hidden" name="attachment_name" value={f.name} />
+            </span>
+          ))}
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-brand hover:text-brand"
+        >
+          Attach files
+        </button>
+        {files.length > 0 && (
+          <ul className="mt-2 space-y-1">
+            {files.map((f) => (
+              <li
+                key={f.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs"
+              >
+                <span className="truncate font-medium text-ink">{f.name}</span>
+                <span className="flex shrink-0 items-center gap-2 text-slate-400">
+                  {f.status === "uploading" ? (
+                    <span className="text-slate-500">Uploading…</span>
+                  ) : f.status === "failed" ? (
+                    <span className="font-semibold text-red-600">
+                      upload failed
+                    </span>
+                  ) : (
+                    fmtSize(f.size)
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeFile(f.id)}
+                    aria-label={`Remove ${f.name}`}
+                    className="font-bold text-slate-400 hover:text-red-600"
+                  >
+                    &times;
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {fileError && (
+          <p className="mt-1 text-xs font-medium text-red-600">{fileError}</p>
+        )}
+        <p className="mt-1 text-[11px] text-slate-400">
+          Up to 5 files · 20 MB each · 25 MB total — attached to every email
+          in the campaign.
+        </p>
+      </div>
+
       <input type="hidden" name="template" value={templateId} />
       {/* selections that are filtered out of view must still submit */}
       {[...selected]
@@ -347,12 +490,14 @@ export default function CampaignComposer({ leads }: { leads: ComposerLead[] }) {
 
       <button
         type="submit"
-        disabled={pending || selected.size === 0}
+        disabled={pending || uploading || selected.size === 0}
         className="w-full rounded-xl bg-brand px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-orange-600 disabled:opacity-40"
       >
         {pending
           ? "Sending…"
-          : `Send to ${selected.size} lead${selected.size === 1 ? "" : "s"}`}
+          : uploading
+            ? "Uploading attachments…"
+            : `Send to ${selected.size} lead${selected.size === 1 ? "" : "s"}`}
       </button>
 
       {state?.ok && (
