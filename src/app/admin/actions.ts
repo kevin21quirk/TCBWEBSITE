@@ -559,7 +559,7 @@ export async function addProspect(formData: FormData) {
       RETURNING id`;
     await sql`
       INSERT INTO follow_ups (lead_id, assigned_to, title, due_at, auto)
-      VALUES (${rows[0].id}, ${user.id}, 'First outreach to ${company.slice(0, 100)}', now() + interval '1 day', true)`;
+      VALUES (${rows[0].id}, ${user.id}, ${`First outreach to ${company.slice(0, 100)}`}, now() + interval '1 day', true)`;
     await sql`
       INSERT INTO lead_activities (lead_id, user_id, type, body)
       VALUES (${rows[0].id}, ${user.id}, 'update', ${`Imported from Lead Radar (Companies House ${number})`})`;
