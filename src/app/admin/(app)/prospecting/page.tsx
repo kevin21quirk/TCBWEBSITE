@@ -21,7 +21,10 @@ export default async function ProspectingPage() {
   await requireUser();
 
   const [queue, statsRows, recent] = await Promise.all([
-    sql`SELECT l.*, u.name AS assignee_name FROM leads l
+    sql`SELECT l.*, u.name AS assignee_name,
+        (SELECT count(*) FROM lead_activities a WHERE a.lead_id = l.id
+          AND a.type IN ('call','meeting','open','click','visit'))::int AS engagement_count
+      FROM leads l
       LEFT JOIN users u ON u.id = l.assigned_to
       WHERE l.linkedin_url IS NULL AND l.status NOT IN ('won','lost')
         AND l.source <> 'newsletter'

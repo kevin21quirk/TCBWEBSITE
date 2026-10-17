@@ -18,6 +18,7 @@ import { requireUser } from "@/lib/auth";
 import { site } from "@/lib/content";
 import {
   ACTIVITY_STYLES,
+  ENGAGEMENT_ACTIVITY_TYPES,
   LEAD_STATUSES,
   LOGGABLE_ACTIVITIES,
   STATUS_STYLES,
@@ -126,6 +127,7 @@ export default async function LeadDetailPage({
   const { score, temperature } = scoreLead({
     ...lead,
     activity_count: acts.filter((a) => a.type !== "status" && a.type !== "assign").length,
+    engagement_count: acts.filter((a) => ENGAGEMENT_ACTIVITY_TYPES.includes(a.type)).length,
     last_activity_at: acts[0]?.created_at ?? null,
   });
 

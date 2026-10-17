@@ -21,6 +21,8 @@ export default async function PipelinePage({
     SELECT l.*, u.name AS assignee_name,
       (SELECT count(*) FROM lead_activities a WHERE a.lead_id = l.id
         AND a.type NOT IN ('status','assign'))::int AS activity_count,
+      (SELECT count(*) FROM lead_activities a WHERE a.lead_id = l.id
+        AND a.type IN ('call','meeting','open','click','visit'))::int AS engagement_count,
       (SELECT max(created_at) FROM lead_activities a WHERE a.lead_id = l.id) AS last_activity_at,
       EXISTS (SELECT 1 FROM follow_ups f WHERE f.lead_id = l.id
         AND f.done = false AND f.due_at < now()) AS overdue

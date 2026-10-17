@@ -80,6 +80,7 @@ export type Lead = {
 export type LeadStats = {
   activity_count?: number;
   last_activity_at?: string | null;
+  engagement_count?: number;
 };
 
 export const money = new Intl.NumberFormat("en-GB", {
@@ -133,9 +134,27 @@ const SOURCE_POINTS: Record<string, number> = {
 };
 
 /**
+ * Activities where the lead actually did something — reply-side signals
+ * (email opens/clicks, website visits via smart links) and two-way
+ * touchpoints (calls, meetings). Sends, notes and system entries don't
+ * count towards engagement.
+ */
+export const ENGAGEMENT_ACTIVITY_TYPES = ["call", "meeting", "open", "click", "visit"];
+
+/** Sources where the lead reached out to us first — inbound counts as engaged. */
+const INBOUND_SOURCES = new Set([
+  "contact form",
+  "phone",
+  "referral",
+  "event",
+  "newsletter",
+]);
+
+/**
  * 0–100 score from fit (how complete the record is), intent (source and
- * pipeline stage), engagement and recency. Transparent rules so the team
- * can see why a lead is hot.
+ * pipeline stage), engagement and recency. "Hot" additionally requires
+ * the lead to have responded in some way — a complete record and fresh
+ * enquiry alone only gets to warm.
  */
 export function scoreLead(l: Lead & LeadStats): {
   score: number;
@@ -163,10 +182,15 @@ export function scoreLead(l: Lead & LeadStats): {
     s -= 12;
   }
 
+  const engaged =
+    l.status === "qualified" ||
+    INBOUND_SOURCES.has(l.source) ||
+    (l.engagement_count ?? 0) > 0;
+
   const score = Math.max(0, Math.min(100, Math.round(s)));
   return {
     score,
-    temperature: score >= 60 ? "hot" : score >= 35 ? "warm" : "cold",
+    temperature: score >= 60 && engaged ? "hot" : score >= 35 ? "warm" : "cold",
   };
 }
 

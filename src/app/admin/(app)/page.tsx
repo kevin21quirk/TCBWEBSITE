@@ -44,6 +44,8 @@ export default async function DashboardPage() {
     sql`SELECT l.*,
           (SELECT count(*) FROM lead_activities a WHERE a.lead_id = l.id
             AND a.type NOT IN ('status','assign'))::int AS activity_count,
+          (SELECT count(*) FROM lead_activities a WHERE a.lead_id = l.id
+            AND a.type IN ('call','meeting','open','click','visit'))::int AS engagement_count,
           (SELECT max(created_at) FROM lead_activities a WHERE a.lead_id = l.id) AS last_activity_at
         FROM leads l WHERE l.status NOT IN ('won','lost')`,
     sql`SELECT count(*)::int AS n FROM lead_activities

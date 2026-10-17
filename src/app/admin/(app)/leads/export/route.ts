@@ -23,7 +23,10 @@ export async function GET(req: Request) {
   const pattern = `%${q}%`;
 
   const rows = (await sql`
-    SELECT l.*, u.name AS assignee_name FROM leads l
+    SELECT l.*, u.name AS assignee_name,
+      (SELECT count(*) FROM lead_activities a WHERE a.lead_id = l.id
+        AND a.type IN ('call','meeting','open','click','visit'))::int AS engagement_count
+    FROM leads l
     LEFT JOIN users u ON u.id = l.assigned_to
     WHERE (${q} = '' OR l.name ILIKE ${pattern} OR l.email ILIKE ${pattern}
            OR l.phone ILIKE ${pattern} OR l.company ILIKE ${pattern})
