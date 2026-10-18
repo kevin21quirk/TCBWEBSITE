@@ -127,9 +127,10 @@ export default function TrainingPlayer({
     Math.max(cxL - STAGE_W / (2 * camScale), -100),
     STAGE_W - STAGE_W / camScale + 100
   );
+  // camY > 0 scrolls down through the scene; clamp to keep the target inside.
   const camY = Math.min(
-    Math.max(cyL - SCENE_H / (2 * camScale), -(sceneH.current - SCENE_H / camScale)),
-    70
+    Math.max(cyL - SCENE_H / (2 * camScale), -70),
+    Math.max(70, sceneH.current - SCENE_H / camScale + 60)
   );
 
   // Spotlight rect in scene-local coordinates (camera layer draws it).
@@ -194,8 +195,10 @@ export default function TrainingPlayer({
           >
             <div
               ref={sceneRef}
-              // zoom scales layout itself, so everything renders ~20% larger —
-              // the wrapper is narrowed to compensate and still fills the stage.
+              // Slow cinematic push-in on wide shots; zoom scales layout itself,
+              // so everything renders ~20% larger and the wrapper is narrowed
+              // to compensate and still fills the stage.
+              className={hot ? "" : "animate-kenburns"}
               style={{ zoom: 1.2, width: STAGE_W / 1.2 }}
             >
               <Scene variant={variant} typing={typing} />
@@ -213,6 +216,18 @@ export default function TrainingPlayer({
                       className="pointer-events-none absolute z-30 animate-pulse rounded-xl border border-brand-light/50 shadow-[0_0_28px_-2px_rgba(248,113,113,0.85),inset_0_0_28px_-10px_rgba(248,113,113,0.85)]"
                       style={{ left: hx, top: hy, width: hw, height: hh, transition: "all 1.1s cubic-bezier(.3,.7,.25,1)" }}
                     />
+                    {/* sheen sweeping across the highlighted area on a loop */}
+                    <div
+                      className="pointer-events-none absolute z-30 overflow-hidden rounded-xl"
+                      style={{ left: hx, top: hy, width: hw, height: hh, transition: "all 1.1s cubic-bezier(.3,.7,.25,1)" }}
+                    >
+                      <div className="animate-sheen absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+                    </div>
+                    {/* pulsing marker on the corner */}
+                    <span className="pointer-events-none absolute z-30" style={{ left: hx - 5, top: hy - 5 }}>
+                      <span className="animate-holo-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-brand-light/70" />
+                      <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-brand-light" />
+                    </span>
                     {/* ring that draws itself around the target on each step */}
                     <svg
                       key={`ring-${idx}`}

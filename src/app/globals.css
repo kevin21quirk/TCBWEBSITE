@@ -723,6 +723,21 @@ body {
   animation: drag-card 2s cubic-bezier(0.45, 0.05, 0.35, 1) both;
 }
 
+/* Continuous sheen sliding across a spotlighted element */
+.animate-sheen {
+  animation: sweep-x 2.6s ease-in-out infinite;
+}
+
+/* Slow cinematic push-in for wide shots (no hotspot) */
+@keyframes kenburns {
+  from { transform: scale(1) translate(0, 0); }
+  to { transform: scale(1.07) translate(-1.5%, -1.2%); }
+}
+
+.animate-kenburns {
+  animation: kenburns 16s ease-in-out infinite alternate;
+}
+
 /* ---------- Admin: holographic theme remap ----------
    The CRM pages were written against a light palette (white cards, slate
    text). Rather than rewrite every page, the admin shell is wrapped in
@@ -953,7 +968,9 @@ body {
   .animate-ring-draw,
   .animate-sweep-x,
   .animate-pop-in,
-  .animate-drag-card {
+  .animate-drag-card,
+  .animate-sheen,
+  .animate-kenburns {
     animation: none !important;
     opacity: 1;
     stroke-dashoffset: 0;

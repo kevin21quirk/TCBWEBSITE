@@ -86,9 +86,17 @@ export function AppFrame({
   children: ReactNode;
 }) {
   return (
-    <div className="holo-theme flex h-full w-full bg-[#070b16] text-white">
+    <div className="holo-theme relative flex h-full w-full overflow-hidden bg-[#070b16] text-white">
+      {/* ambient aurora — keeps every scene moving like the real backdrop */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="animate-holo-drift absolute -left-40 -top-40 h-[480px] w-[480px] rounded-full bg-brand/20 blur-[110px]" />
+        <div className="animate-holo-drift absolute -right-24 top-1/3 h-[420px] w-[420px] rounded-full bg-violet-600/15 blur-[110px]" style={{ animationDelay: "-6s" }} />
+        <div className="animate-holo-drift absolute -bottom-32 left-1/3 h-[380px] w-[380px] rounded-full bg-sky-500/15 blur-[110px]" style={{ animationDelay: "-12s" }} />
+        <div className="holo-grid absolute inset-x-0 bottom-0 h-1/2 opacity-60" />
+      </div>
+
       {/* mini sidebar */}
-      <div className="glass flex w-[172px] shrink-0 flex-col border-r border-white/10">
+      <div className="glass relative z-10 flex w-[172px] shrink-0 flex-col border-r border-white/10">
         <div className="flex h-[56px] items-center gap-2 border-b border-white/10 px-4">
           <span className="flex h-6 w-9 items-center justify-center rounded bg-white px-1 text-[8px] font-black leading-none text-slate-900">
             TCB
@@ -123,7 +131,7 @@ export function AppFrame({
       </div>
 
       {/* mini header + page */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <div className="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#070b16]/55 px-4">
           <p className="truncate text-[11px] text-white/50">
             Welcome back, <span className="font-semibold text-white">{userName}</span>

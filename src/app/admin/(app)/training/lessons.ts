@@ -70,6 +70,8 @@ export const LESSONS: Lesson[] = [
         chapter: "Bulk select",
         caption: "Selection makes clean-up fast: Select page ticks everything visible, and Select likely spam ticks just the flagged rows in one click.",
         spot: "toolbar",
+        click: true,
+        set: "spam_selected",
       },
       {
         chapter: "Table",
