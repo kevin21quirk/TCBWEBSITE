@@ -100,7 +100,6 @@ export const LESSONS: Lesson[] = [
       {
         chapter: "Spam gone",
         caption: "Gone — the pipeline counts update instantly, and the Copilot spam warning on the dashboard clears itself. Genuine leads are never touched by the bulk tools.",
-        dur: 6000,
       },
       {
         chapter: "Single-row delete",

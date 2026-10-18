@@ -47,8 +47,16 @@ export type Lesson = {
   steps: Step[];
 };
 
-export const stepDur = (s: Step) =>
-  s.dur ?? Math.min(10500, Math.max(5200, 3200 + s.caption.length * 52));
+// Step length = camera lead-in + the longer of caption typing (42 ch/s) or
+// field typing (55ms/char after a 900ms pause) + a tail to let the result
+// breathe — click steps get a bigger tail so the outcome is visible.
+export const stepDur = (s: Step) => {
+  if (s.dur) return s.dur;
+  const caption = (s.caption.length / 42) * 1000;
+  const typing = s.type ? 900 + s.type.length * 55 : 0;
+  const tail = s.click ? 2300 : 1400;
+  return Math.min(11000, Math.max(4200, 900 + Math.max(caption, typing) + tail));
+};
 
 export const lessonDur = (l: Lesson) => l.steps.reduce((s, x) => s + stepDur(x), 0);
 
