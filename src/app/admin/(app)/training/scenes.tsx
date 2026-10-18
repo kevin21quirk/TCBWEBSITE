@@ -108,15 +108,18 @@ const LEADS = [
 ];
 
 export function LeadsScene({ variant, typing }: { variant: string | null; typing?: Typing }) {
+  const spamView = variant === "spam_filtered" || variant === "spam_selected";
   const selected = variant === "spam_selected";
-  const deleted = variant === "spam_deleted" || variant === "open_lead";
-  if (variant === "open_lead") return <LeadDetailScene typing={typing} />;
+  const deleted = variant === "spam_deleted";
+  if (variant === "open_lead" || variant === "logged")
+    return <LeadDetailScene variant={variant} typing={typing} />;
   const rows = LEADS;
+  const count = rows.filter((l) => !(deleted && l.spam) && !(spamView && !l.spam)).length;
   return (
     <AppFrame nav="/admin/leads">
       <div className="holo-theme space-y-3 p-5 text-white">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Leads <span className="text-sm font-normal text-white/40">({rows.filter((l) => !(deleted && l.spam)).length})</span></h1>
+          <h1 className="text-xl font-bold">Leads <span className="text-sm font-normal text-white/40">({count})</span></h1>
           <div className="flex gap-2">
             <span className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">Export CSV</span>
             <span className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">Import</span>
@@ -134,9 +137,9 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
               <span key={s} className={`rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${s === "All" ? "bg-white/20 ring-white/30" : "ring-white/15 text-white/60"}`}>{s}</span>
             ))}
             <SpotInline id="spamchip" className="ml-auto">
-              <span className="flex items-center gap-1.5 rounded-full bg-red-500/15 px-3 py-1 text-[10px] font-semibold text-red-300 ring-1 ring-red-400/40">
+              <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold ring-1 transition-colors ${spamView ? "bg-red-500 text-white ring-red-300" : "bg-red-500/15 text-red-300 ring-red-400/40"}`}>
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-2.5 w-2.5"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" /></svg>
-                Likely spam
+                {spamView ? "Likely spam · 2" : "Likely spam"}
               </span>
             </SpotInline>
           </div>
@@ -154,7 +157,7 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
             </thead>
             <tbody className="divide-y divide-white/[0.06]">
               {rows.map((l) => (
-                <tr key={l.id} className={l.spam && deleted ? "row-collapse" : l.spam ? "bg-red-500/[0.07]" : ""}>
+                <tr key={l.id} className={(l.spam && deleted) || (!l.spam && spamView) ? "row-collapse" : l.spam ? "bg-red-500/[0.07]" : ""}>
                   <td className="pl-4 py-2.5 align-top">
                     <span className={`mt-0.5 inline-block h-3.5 w-3.5 rounded border ${selected && l.spam ? "border-red-400 bg-red-500" : "border-white/30 bg-white/10"}`}>
                       {selected && l.spam && <svg viewBox="0 0 24 24" fill="white" className="animate-pop-in h-3.5 w-3.5"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>}
@@ -202,7 +205,8 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
 
 /* ------------------------- lead detail mini ------------------------ */
 
-function LeadDetailScene({ typing }: { typing?: Typing }) {
+function LeadDetailScene({ variant, typing }: { variant?: string | null; typing?: Typing }) {
+  const logged = variant === "logged";
   const chip = "rounded-xl border border-white/15 px-3 py-2 text-[10px] font-semibold text-white/70";
   return (
     <AppFrame nav="/admin/leads">
@@ -247,9 +251,19 @@ function LeadDetailScene({ typing }: { typing?: Typing }) {
             <p className={pTitle}>Activity timeline</p>
             <div className="mt-2 flex gap-2">
               <span className="w-24 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-[10px] text-white/60">Call ▾</span>
-              <Field id="loginput" placeholder="Call outcome, meeting notes…" typing={typing} className="flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-[10px] text-white/40" />
-              <span className="rounded-lg bg-white/15 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Log</span>
+              <Field id="loginput" placeholder="Call outcome, meeting notes…" typing={typing} value={logged ? "Called — sending the umbrella comparison" : undefined} className="flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-[10px] text-white/40" />
+              <span data-spot="logbtn" className="rounded-lg bg-white/15 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Log</span>
             </div>
+            {logged && (
+              <div className="animate-pop-in mt-3 flex gap-3">
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
+                <div>
+                  <p className="text-xs"><span className="font-semibold">Kevin logged a call</span></p>
+                  <p className="text-[10px] text-white/50">Called — sending the umbrella comparison</p>
+                  <p className="text-[9px] text-white/35">just now</p>
+                </div>
+              </div>
+            )}
             {[
               ["bg-emerald-500", "Kevin logged a call", "Asked about umbrella vs PAYE — wants a comparison", "10 min ago"],
               ["bg-violet-500", "Kevin emailed the lead", "Sent: Finding the right umbrella company…", "1 h ago"],
@@ -384,22 +398,24 @@ export function PipelineScene({ variant }: { variant: string | null }) {
 /* ============================== RADAR ============================== */
 
 export function RadarScene({ variant, typing }: { variant: string | null; typing?: Typing }) {
+  const scanned = variant === "scanned" || variant === "officers" || variant === "person_added";
+  const sicOpen = variant === "sic_open";
   const officers = variant === "officers" || variant === "person_added";
   const added = variant === "person_added";
   const rows = [
-    { n: "APEX POWER RECRUITMENT LTD", num: "15822341", formed: "6 Oct 2026", addr: "71 Shelton St, London", sic: [["78200", true], ["82990", false]] },
-    { n: "GRANITE PROJECT SERVICES LTD", num: "15822980", formed: "8 Oct 2026", addr: "Manchester M1", sic: [["71122", true], ["78200", true]] },
-    { n: "HALO MEDICAL AGENCY LTD", num: "15823402", formed: "12 Oct 2026", addr: "Birmingham B3", sic: [["86900", true]] },
+    { n: "APEX DIGITAL CONSULTING LTD", num: "15822341", formed: "6 Oct 2026", addr: "71 Shelton Street, London, WC2H 9JQ", inCrm: false, sic: [{ c: "62020", l: "IT consultancy", m: true }, { c: "74909", l: "Other professional", m: true }] },
+    { n: "NORTHBRIDGE PROJECT SERVICES LTD", num: "15822980", formed: "8 Oct 2026", addr: "Manchester M1 2AB", inCrm: false, sic: [{ c: "70229", l: "Management consultancy", m: true }, { c: "62020", l: "IT consultancy", m: true }] },
+    { n: "STONEWOOD ENGINEERING CONSULTING LTD", num: "15823402", formed: "12 Oct 2026", addr: "Birmingham B3 1AA", inCrm: true, sic: [{ c: "71122", l: "Engineering consultancy", m: true }] },
   ];
   return (
     <AppFrame nav="/admin/radar">
       <div className="holo-theme space-y-3 p-5 text-white">
         <div>
           <h1 className="text-xl font-bold">Lead Radar</h1>
-          <p className="mt-0.5 text-[10px] text-white/50">Scans Companies House for newly formed companies — new contractors need an umbrella before competitors find them.</p>
+          <p className="mt-0.5 text-[10px] text-white/50">Scans the official UK company register (Companies House) for newly formed companies — open People on any company to see the named directors to contact.</p>
         </div>
         <Spot id="presets" className="grid grid-cols-3 gap-3">
-          {[["New this week", "Incorporated in the last 7 days — hottest prospects"], ["New this month", "Last 30 days of registrations"], ["New this quarter", "Wider sweep — 90 days"]].map(([l, h]) => (
+          {[["New this week", "Agencies incorporated in the last 7 days — hottest prospects"], ["New this month", "Last 30 days of new agency registrations"], ["New this quarter", "Wider sweep — 90 days of new incorporations"]].map(([l, h]) => (
             <div key={l as string} className={`${glass} p-3`}>
               <p className="flex items-center gap-1.5 text-xs font-bold"><span className="h-1.5 w-1.5 rounded-full bg-brand" />{l}</p>
               <p className="mt-1 text-[9px] text-white/50">{h}</p>
@@ -407,56 +423,93 @@ export function RadarScene({ variant, typing }: { variant: string | null; typing
           ))}
         </Spot>
         <Spot id="scanform" className={`${glass} flex items-center gap-2 p-3`}>
-          <Field id="q" placeholder="Company name includes… e.g. construction, medical, IT" typing={typing} className="flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40" />
-          <span className="w-32 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40">Location…</span>
-          <span className="w-36 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/60">Recruitment agencies ▾</span>
-          <span className="rounded-lg bg-gradient-to-r from-brand to-brand-light px-5 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Scan</span>
+          <Field id="q" placeholder="Company name includes… e.g. construction, medical, IT" typing={typing} value={scanned || variant === "typed" ? "construction" : undefined} className="flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40" />
+          <span className="w-32 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40">Location… e.g. Manchester</span>
+          <SpotInline id="sic" className="relative">
+            <span className="block w-40 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/75">New contractors ▾</span>
+            {sicOpen && (
+              <div className="animate-pop-in absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-xl border border-white/15 bg-[#0d1526] shadow-2xl">
+                {["New contractors", "Recruitment agencies", "Payroll & umbrella"].map((o, i) => (
+                  <p key={o} className={`flex items-center justify-between px-3 py-1.5 text-[10px] ${i === 0 ? "bg-white/10 font-semibold text-white" : "text-white/55"}`}>
+                    {o}{i === 0 && <span className="text-emerald-300">✓</span>}
+                  </p>
+                ))}
+              </div>
+            )}
+          </SpotInline>
+          <span data-spot="scanbtn" className="rounded-lg bg-gradient-to-r from-brand to-brand-light px-5 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Scan</span>
         </Spot>
-        <div className={`${glass} overflow-hidden`}>
-          <p className="border-b border-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-widest">148 prospects found</p>
-          {rows.map((r, i) => (
-            <div key={r.n} className="border-b border-white/[0.06] px-4 py-2.5 last:border-0">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold">{r.n}</p>
-                  <p className="text-[9px] text-white/45">{r.num} · formed {r.formed}</p>
-                  <p className="text-[9px] text-white/35">{r.addr}</p>
-                  <div className="mt-1 flex gap-1">
-                    {r.sic.map(([s, m]) => (
-                      <span key={s as string} className={`rounded-full px-1.5 py-0.5 text-[8px] font-semibold ${m ? "bg-brand/15 text-brand-light ring-1 ring-brand/30" : "bg-white/10 text-white/45"}`}>SIC {s}</span>
-                    ))}
+        <p className="-mt-1 text-[9px] text-white/35">New one-person consultancies — the director is a contractor who needs an umbrella. Only active companies are returned.</p>
+        {scanned ? (
+          <Spot id="results" className={`${glass} overflow-hidden`}>
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+              <p className="text-[11px] font-bold uppercase tracking-widest">148 prospects found</p>
+              <p className="text-[8px] text-white/35">matching &ldquo;construction&rdquo; · incorporated last 30 days · highlighted SIC codes are the ones that matched</p>
+            </div>
+            {rows.map((r, i) => (
+              <div key={r.n} className="animate-holo-in border-b border-white/[0.06] px-4 py-2.5 last:border-0" style={{ animationDelay: `${i * 0.14}s` }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold">{r.n}</p>
+                    <p className="text-[9px] text-white/45">{r.num} · formed {r.formed}</p>
+                    <p className="text-[9px] text-white/35">{r.addr}</p>
+                    <div className="mt-1 flex gap-1">
+                      {r.sic.map((s) => (
+                        <span key={s.c} className={`rounded-full px-1.5 py-0.5 text-[8px] font-semibold ${s.m ? "bg-brand/15 text-brand-light ring-1 ring-brand/30" : "bg-white/10 text-white/45"}`}>{s.c} {s.l}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {i === 0 ? (
+                      <Spot id="people">
+                        <span className={`block rounded-lg px-2 py-1 text-[9px] font-semibold ${officers ? "bg-white/20 text-white" : "border border-white/15 text-white/60"}`}>People {officers ? "▴" : "▾"}</span>
+                      </Spot>
+                    ) : (
+                      <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">People ▾</span>
+                    )}
+                    {r.inCrm ? (
+                      <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[9px] font-semibold text-emerald-300 ring-1 ring-emerald-400/40">✓ In CRM</span>
+                    ) : (
+                      <span className="rounded-full bg-gradient-to-r from-brand to-brand-light px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider">+ Add to CRM</span>
+                    )}
+                    <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">in ↗</span>
+                    <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">Web ↗</span>
+                    <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">CH ↗</span>
                   </div>
                 </div>
-                <div className="flex gap-1.5">
-                  {i === 0 ? (
-                    <Spot id="people">
-                      <span className={`rounded-lg px-2 py-1 text-[9px] font-semibold ${officers ? "bg-white/20" : "border border-white/15 text-white/60"}`}>People {officers ? "▴" : "▾"}</span>
-                    </Spot>
-                  ) : (
-                    <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">People ▾</span>
-                  )}
-                  <span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-semibold text-white/60">+ Add to CRM</span>
-                  <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">in ↗</span>
-                  <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">CH ↗</span>
-                </div>
+                {i === 0 && officers && (
+                  <Spot id="officers" className="animate-holo-in mt-2 rounded-xl border border-brand/25 bg-brand/[0.05] p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest">The people behind {r.n}</p>
+                    {[["James Whittaker", "Director · appointed 6 Oct 2026", true], ["Sophie Lang", "Director · appointed 6 Oct 2026", false]].map(([n, r2, first]) => (
+                      <div key={n as string} className="mt-2 flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.07] px-2.5 py-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-brand to-orange-500 text-[9px] font-bold">{(n as string)[0]}</span>
+                        <div className="flex-1"><p className="text-[11px] font-semibold">{n}</p><p className="text-[9px] text-white/45">{r2}</p></div>
+                        <div className="flex items-center gap-1.5">
+                          {first ? (
+                            <SpotInline id="addlead">
+                              <span className={`block rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider ${added ? "bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-400/40" : "bg-gradient-to-r from-brand to-brand-light"}`}>
+                                {added ? "✓ In CRM" : "+ Add as lead"}
+                              </span>
+                            </SpotInline>
+                          ) : (
+                            <span className="rounded-full bg-gradient-to-r from-brand to-brand-light px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider">+ Add as lead</span>
+                          )}
+                          <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">in ↗</span>
+                        </div>
+                      </div>
+                    ))}
+                    <p className="mt-2 text-[8px] text-white/35">Directors &amp; officers from the official register — add them, find them on LinkedIn, then run the playbook.</p>
+                  </Spot>
+                )}
               </div>
-              {i === 0 && officers && (
-                <Spot id="officers" className="animate-holo-in mt-2 rounded-xl border border-brand/25 bg-brand/[0.05] p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest">The people behind {r.n}</p>
-                  {[["JAMES WHITTAKER", "Director · appointed 6 Oct 2026", added], ["SOPHIE LANG", "Director · appointed 6 Oct 2026", false]].map(([n, r2, a]) => (
-                    <div key={n as string} className="mt-2 flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.07] px-2.5 py-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-brand to-orange-500 text-[9px] font-bold">{(n as string)[0]}</span>
-                      <div className="flex-1"><p className="text-[11px] font-semibold">{n}</p><p className="text-[9px] text-white/45">{r2}</p></div>
-                      <span className={`rounded-full px-2.5 py-1 text-[9px] font-semibold ${a ? "bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-400/40" : "bg-gradient-to-r from-brand to-brand-light"}`}>
-                        {a ? "✓ In CRM" : "+ Add to CRM"}
-                      </span>
-                    </div>
-                  ))}
-                </Spot>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </Spot>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center text-xs text-white/40">
+            Pick a quick scan above, or run a custom scan — results appear here.
+            <p className="mt-1 text-[9px] text-white/30">Tip: companies registered this week need umbrella and payroll partners right now. Being first to call wins the account.</p>
+          </div>
+        )}
       </div>
     </AppFrame>
   );
@@ -634,7 +687,7 @@ export function OutreachScene({ variant }: { variant: string | null }) {
 /* ============================= CALENDAR ============================ */
 
 export function CalendarScene({ variant }: { variant: string | null }) {
-  void variant;
+  const doneTick = variant === "done_tick";
   const chips: Record<number, [string, string][]> = {
     14: [["Call Sarah — comparison", "red"]],
     16: [["● Tom Reeves", "green"]],
@@ -708,13 +761,16 @@ export function CalendarScene({ variant }: { variant: string | null }) {
             </Spot>
             <Spot id="upcoming" className={`${glass} overflow-hidden`}>
               <p className="border-b border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest">Next 14 days</p>
-              {[["Chase Priya", "Priya Shah", "19 Oct"], ["Call Tom Reeves", "Tom Reeves", "23 Oct"], ["Onboard Mo Khan", "Mo Khan", "27 Oct"]].map(([t, n, d]) => (
-                <div key={t} className="flex items-center gap-2 border-b border-white/[0.05] px-3 py-2 last:border-0">
-                  <span data-spot={t === "Chase Priya" ? "done" : undefined} className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-white/30 text-transparent">✓</span>
-                  <div className="min-w-0 flex-1"><p className="truncate text-[10px] font-semibold">{n}</p><p className="truncate text-[9px] text-white/45">{t}</p></div>
+              {[["Chase Priya", "Priya Shah", "19 Oct"], ["Call Tom Reeves", "Tom Reeves", "23 Oct"], ["Onboard Mo Khan", "Mo Khan", "27 Oct"]].map(([t, n, d]) => {
+                const ticked = doneTick && t === "Chase Priya";
+                return (
+                <div key={t} className={`flex items-center gap-2 border-b border-white/[0.05] px-3 py-2 last:border-0 transition-opacity duration-500 ${ticked ? "opacity-45" : ""}`}>
+                  <span data-spot={t === "Chase Priya" ? "done" : undefined} className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ${ticked ? "border-emerald-400 bg-emerald-400/25 text-emerald-300" : "border-white/30 text-transparent"}`}>✓</span>
+                  <div className="min-w-0 flex-1"><p className={`truncate text-[10px] font-semibold ${ticked ? "line-through" : ""}`}>{n}</p><p className="truncate text-[9px] text-white/45">{t}</p></div>
                   <p className="text-[8px] text-white/35">{d}</p>
                 </div>
-              ))}
+                );
+              })}
             </Spot>
           </div>
         </div>

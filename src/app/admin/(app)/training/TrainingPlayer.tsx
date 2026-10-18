@@ -36,6 +36,7 @@ export default function TrainingPlayer({
 
   const viewRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
+  const hotEl = useRef<HTMLElement | null>(null);
   const sceneH = useRef(SCENE_H);
   const last = useRef<number | null>(null);
 
@@ -46,9 +47,21 @@ export default function TrainingPlayer({
   const step = steps[idx];
   const tIn = Math.min(Math.max(t - start, 0), dur);
   const clickAt = Math.min(dur * 0.62, Math.max(0, dur - 1600));
-  const sets = step.sets ?? (step.set ? [{ at: 0.62, v: step.set }] : []);
   const frac = tIn / dur;
-  const variant = sets.reduce<string | null>((v, s) => (frac >= s.at ? s.v : v), null);
+  // Scene variants persist across steps — a scene change applied in chapter N
+  // (e.g. opening a lead, dragging a card, filtering spam) must still be on
+  // screen in chapter N+1, whose own narration refers to it.
+  const variant = (() => {
+    let v: string | null = null;
+    for (let i = 0; i <= idx; i++) {
+      const list = steps[i].sets ?? (steps[i].set ? [{ at: 0.62, v: steps[i].set as string }] : []);
+      for (const ch of list) if (i < idx || frac >= ch.at) v = ch.v;
+    }
+    return v;
+  })();
+  // The current step's own phase — typing only runs before this step's click.
+  const stepPhase = (step.sets ?? (step.set ? [{ at: 0.62, v: step.set }] : []))
+    .reduce<string | null>((v, s) => (frac >= s.at ? s.v : v), null);
   const chars = Math.min(step.caption.length, Math.floor((tIn / 1000) * SPEED));
 
   useEffect(() => {
@@ -88,6 +101,7 @@ export default function TrainingPlayer({
     if (!view || !scene) return;
     setViewW(view.clientWidth);
     const el = step.spot ? scene.querySelector<HTMLElement>(`[data-spot="${step.spot}"]`) : null;
+    hotEl.current = el;
     // Measure in scene-local coordinates — zoom/camera/outer-scale all cancel
     // out of the subtraction, so the rect is stable while the camera moves.
     const sr = scene.getBoundingClientRect();
@@ -153,9 +167,19 @@ export default function TrainingPlayer({
     ? Math.min(step.type.length, Math.max(0, Math.floor((tIn - 900) / 55)))
     : 0;
   const typing =
-    step.type && step.spot && !variant
+    step.type && step.spot && !stepPhase
       ? { spot: step.spot, text: step.type, chars: typeChars }
       : null;
+
+  // While the click lands, depress the actual target element — the button
+  // visibly presses under the cursor, not just the cursor itself.
+  const pressNow = step.click && tIn >= clickAt && tIn < clickAt + 380;
+  useEffect(() => {
+    const el = hotEl.current;
+    if (!el || !hot || hot.h > 90 || hot.w > 560) return;
+    el.classList.toggle("mock-pressing", pressNow);
+    return () => el.classList.remove("mock-pressing");
+  }, [pressNow, hot]);
 
   const btn = "flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/70 transition-colors hover:border-white/40 hover:text-white";
 

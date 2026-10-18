@@ -25,8 +25,9 @@ export type Step = {
   type?: string;
   /** Variant string passed to the scene after the click lands. */
   set?: string;
-  /** Multi-phase variants: v applies once tIn/dur passes `at` (0–1). Overrides `set`. */
-  sets?: { at: number; v: string }[];
+  /** Multi-phase variants: v applies once tIn/dur passes `at` (0–1).
+      Overrides `set`. v: null returns the scene to its base state. */
+  sets?: { at: number; v: string | null }[];
 };
 
 export type Lesson = {
@@ -196,11 +197,14 @@ export function Field({
   id,
   placeholder,
   typing,
+  value,
   className = "",
 }: {
   id: string;
   placeholder: string;
   typing?: Typing;
+  /** Committed text shown after the "type" step finishes. */
+  value?: string;
   className?: string;
 }) {
   const active = typing && typing.spot === id && typing.chars > 0;
@@ -211,6 +215,8 @@ export function Field({
           {typing.text.slice(0, typing.chars)}
           <span className="ml-px inline-block h-3 w-[2px] animate-pulse bg-white/80 align-middle" />
         </span>
+      ) : value ? (
+        <span className="text-white">{value}</span>
       ) : (
         placeholder
       )}

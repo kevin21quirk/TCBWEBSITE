@@ -62,9 +62,16 @@ export const LESSONS: Lesson[] = [
         type: "sarah jones",
       },
       {
+        chapter: "Table",
+        caption: "Every row shows the lead score — hot, warm or cold — plus contact details, stage, deal value and owner, so you can triage a whole page in seconds.",
+        spot: "table",
+      },
+      {
         chapter: "Likely spam filter",
-        caption: "Website spam is auto-flagged. Click Likely spam to see only the suspicious rows — each has a red Spam? badge explaining exactly why it was caught.",
+        caption: "Website spam is auto-flagged. Click Likely spam and only the suspicious rows stay — each with a red Spam? badge explaining exactly why it was caught.",
         spot: "spamchip",
+        click: true,
+        set: "spam_filtered",
       },
       {
         chapter: "Bulk select",
@@ -72,11 +79,6 @@ export const LESSONS: Lesson[] = [
         spot: "toolbar",
         click: true,
         set: "spam_selected",
-      },
-      {
-        chapter: "Table",
-        caption: "Every row shows the lead score — hot, warm or cold — plus contact details, stage, deal value and owner, so you can triage a whole page in seconds.",
-        spot: "table",
       },
       {
         chapter: "Delete bar",
@@ -103,7 +105,7 @@ export const LESSONS: Lesson[] = [
       {
         chapter: "Opening a lead",
         caption: "Now let's open a lead profile — the page where the actual selling happens. Everything about this person lives here.",
-        set: "open_lead",
+        sets: [{ at: 0.25, v: "open_lead" }],
       },
       {
         chapter: "Score & next steps",
@@ -121,6 +123,14 @@ export const LESSONS: Lesson[] = [
         caption: "Log every touchpoint — calls, emails, meetings, LinkedIn. This builds the timeline, feeds the lead score and keeps the rest of the team in the loop.",
         spot: "loginput",
         type: "Called — sending the umbrella comparison",
+        scroll: true,
+      },
+      {
+        chapter: "Save to timeline",
+        caption: "Hit Log and the touchpoint stamps itself at the top of the timeline — the score recalculates and the whole team sees it instantly.",
+        spot: "logbtn",
+        click: true,
+        set: "logged",
         scroll: true,
       },
       {
@@ -195,15 +205,35 @@ export const LESSONS: Lesson[] = [
         spot: "presets",
       },
       {
+        chapter: "Industry preset",
+        caption: "This dropdown chooses who to hunt — New contractors, Recruitment agencies or Payroll & umbrella. Each preset scans the SIC codes those businesses register under.",
+        spot: "sic",
+        click: true,
+        set: "sic_open",
+      },
+      {
         chapter: "Custom scan",
-        caption: "Or build your own: keyword in the company name, a location filter, and an industry preset covering the right SIC codes. Hit Scan to run it live.",
+        caption: "Or build your own — a keyword the company name must contain, and an optional location to narrow it down.",
         spot: "q",
         type: "construction",
+        sets: [{ at: 0, v: null }],
+      },
+      {
+        chapter: "Run the scan",
+        caption: "Hit Scan and the register answers live — 148 brand-new companies match, listed with their number, formation date, address and SIC codes.",
+        spot: "scanbtn",
         click: true,
+        sets: [{ at: 0, v: "typed" }, { at: 0.62, v: "scanned" }],
+      },
+      {
+        chapter: "Scan results",
+        caption: "Every result is a real registered company — number, formation date, address and SIC codes. The glowing codes are the ones that matched your scan.",
+        spot: "results",
+        scroll: true,
       },
       {
         chapter: "People",
-        caption: "Every result is a real registered company — the glowing SIC codes are the ones that matched your scan. Click People to pull the actual registered directors.",
+        caption: "Companies are anonymous — People pulls the actual registered directors from the official register, so you know exactly who to call.",
         spot: "people",
         click: true,
         set: "officers",
@@ -211,8 +241,8 @@ export const LESSONS: Lesson[] = [
       },
       {
         chapter: "Add a director",
-        caption: "These are the named humans behind the company — who to call, who to connect with. Add to CRM creates a fully-linked lead in one click.",
-        spot: "officers",
+        caption: "+ Add as lead turns a named director into a fully-linked CRM lead in one click — and in ↗ jumps straight to their LinkedIn search.",
+        spot: "addlead",
         scroll: true,
         click: true,
         set: "person_added",
@@ -340,8 +370,10 @@ export const LESSONS: Lesson[] = [
       },
       {
         chapter: "Mark done",
-        caption: "Click the circle on any item to mark it done the moment you finish the call — the dashboard and calendar update instantly everywhere.",
+        caption: "Click the circle on any item to mark it done the moment you finish the call — it ticks green and the dashboard and calendar update instantly everywhere.",
         spot: "done",
+        click: true,
+        set: "done_tick",
       },
       {
         chapter: "Coming up",
