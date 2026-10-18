@@ -127,9 +127,8 @@ export default function TrainingPlayer({
     Math.max(cxL - STAGE_W / (2 * camScale), -100),
     STAGE_W - STAGE_W / camScale + 100
   );
-  // Aim slightly above centre so the subtitle bar never covers the target.
   const camY = Math.min(
-    Math.max(cyL - (SCENE_H * 0.42) / camScale, -(sceneH.current - SCENE_H / camScale)),
+    Math.max(cyL - SCENE_H / (2 * camScale), -(sceneH.current - SCENE_H / camScale)),
     70
   );
 
@@ -146,8 +145,6 @@ export default function TrainingPlayer({
       ? `polygon(0% 0%,100% 0%,100% 100%,0% 100%,0% ${hy + OV}px,${hx + OV}px ${hy + OV}px,${hx + OV}px ${hy + hh + OV}px,${hx + hw + OV}px ${hy + hh + OV}px,${hx + hw + OV}px ${hy + OV}px,0% ${hy + OV}px)`
       : "polygon(0% 0%,100% 0%,100% 100%,0% 100%)"
     : undefined;
-  // Subtitles flip to the top when a large highlighted area reaches the bottom.
-  const captionTop = ready && hot ? SCENE_H * 0.42 + (hh * camScale) / 2 > SCENE_H * 0.7 : false;
   const ripple = step.click && tIn >= clickAt && tIn < clickAt + 800;
   const pressing = ripple;
   const clickCue = step.click && tIn >= clickAt - 1200 && tIn < clickAt + 300;
@@ -283,20 +280,6 @@ export default function TrainingPlayer({
             </div>
           )}
 
-          {/* subtitle bar — video-style captions, outside the camera */}
-          {ready && t < total && (
-            <div className={`pointer-events-none absolute inset-x-0 z-40 flex justify-center ${captionTop ? "top-0 pt-4" : "bottom-0 pb-4"}`}>
-              <div className="mx-4 w-full max-w-4xl rounded-2xl bg-black/75 px-6 py-4 ring-1 ring-white/15 backdrop-blur-md">
-                <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-light">
-                  {idx + 1} / {steps.length} · {step.chapter}
-                </p>
-                <p className="mt-1.5 min-h-[3rem] text-[17px] font-medium leading-snug text-white">
-                  {step.caption.slice(0, chars)}
-                  <span className="ml-1 inline-block h-4 w-[2.5px] translate-y-[3px] animate-pulse bg-white/80" />
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* end card */}
@@ -351,6 +334,19 @@ export default function TrainingPlayer({
             );
           })}
         </div>
+      </div>
+
+      {/* subtitle strip — below the stage, so it can never cover the demo */}
+      <div className="border-t border-white/10 bg-black/60 px-6 py-4">
+        <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-light">
+          {idx + 1} / {steps.length} · {step.chapter}
+        </p>
+        <p className="mt-1.5 min-h-[3.4rem] text-xl font-medium leading-snug text-white">
+          {t >= total
+            ? "Lesson complete — watch again, open the live section, or move on to the next lesson."
+            : step.caption.slice(0, chars)}
+          {t < total && <span className="ml-1 inline-block h-4 w-[2.5px] translate-y-[3px] animate-pulse bg-white/80" />}
+        </p>
       </div>
 
       {/* controls */}
