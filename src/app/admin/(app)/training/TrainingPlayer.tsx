@@ -4,12 +4,18 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { SCENE_H, STAGE_W, stepDur, type Lesson } from "./data";
 
-const SPEED = 40; // caption characters per second
+const SPEED = 42; // caption characters per second
 const glass = "glass rounded-2xl";
 
 type Rect = { x: number; y: number; w: number; h: number };
 
-export default function TrainingPlayer({ lesson }: { lesson: Lesson }) {
+export default function TrainingPlayer({
+  lesson,
+  next,
+}: {
+  lesson: Lesson;
+  next?: { href: string; title: string };
+}) {
   const { steps } = lesson;
   const Scene = lesson.scene;
 
@@ -28,9 +34,9 @@ export default function TrainingPlayer({ lesson }: { lesson: Lesson }) {
   const [hot, setHot] = useState<Rect | null>(null);
   const [viewW, setViewW] = useState<number | null>(null);
 
-  const wrapRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
+  const sceneH = useRef(SCENE_H);
   const last = useRef<number | null>(null);
 
   let idx = 0;
@@ -80,12 +86,13 @@ export default function TrainingPlayer({ lesson }: { lesson: Lesson }) {
     if (!view || !scene) return;
     setViewW(view.clientWidth);
     const el = step.spot ? scene.querySelector<HTMLElement>(`[data-spot="${step.spot}"]`) : null;
-    if (!el) { setHot(null); return; }
-    // Measure in scene-local coordinates — the scene's own translateY cancels
-    // out of the subtraction, so the rect is stable while the scroll animates.
+    // Measure in scene-local coordinates — zoom/camera/outer-scale all cancel
+    // out of the subtraction, so the rect is stable while the camera moves.
     const sr = scene.getBoundingClientRect();
-    const er = el.getBoundingClientRect();
     const s = sr.width / STAGE_W;
+    sceneH.current = sr.height / s;
+    if (!el) { setHot(null); return; }
+    const er = el.getBoundingClientRect();
     setHot({
       x: (er.left - sr.left) / s,
       y: (er.top - sr.top) / s,
@@ -102,20 +109,38 @@ export default function TrainingPlayer({ lesson }: { lesson: Lesson }) {
 
   const ready = viewW != null;
   const scale = ready ? viewW / STAGE_W : 0;
-  const pad = 10;
-  const ty = hot && step.scroll
-    ? Math.min(0, Math.max(SCENE_H - 1700, -(hot.y + hot.h / 2 - SCENE_H * 0.42)))
-    : 0;
-  // Frame coordinates — scene-local rect plus the applied scroll offset.
-  const sx = hot ? hot.x - pad : 0;
-  const sy = hot ? hot.y + ty - pad : 0;
-  const sw = hot ? hot.w + pad * 2 : 0;
-  const sh = hot ? hot.h + pad * 2 : 0;
-  const cx = sx + sw / 2;
-  const cy = sy + sh / 2;
+
+  /* ---------------- cinematic camera ---------------- */
+  // Zoom in on the hotspot (clamped), or hold the wide shot when a step has none.
+  const pad = 14;
+  const camScale = hot
+    ? Math.min(
+        1.75,
+        Math.max(1.12, Math.min((STAGE_W * 0.5) / hot.w, (SCENE_H * 0.78) / hot.h))
+      )
+    : 1;
+  const cxL = hot ? hot.x + hot.w / 2 : STAGE_W / 2;
+  const cyL = hot ? hot.y + hot.h / 2 : SCENE_H / 2;
+  const camX = Math.min(
+    Math.max(cxL - STAGE_W / (2 * camScale), -100),
+    STAGE_W - STAGE_W / camScale + 100
+  );
+  const camY = Math.min(
+    Math.max(cyL - SCENE_H / (2 * camScale), -(sceneH.current - SCENE_H / camScale)),
+    70
+  );
+
+  // Spotlight rect in scene-local coordinates (camera layer draws it).
+  const hx = hot ? hot.x - pad : 0;
+  const hy = hot ? hot.y - pad : 0;
+  const hw = hot ? hot.w + pad * 2 : 0;
+  const hh = hot ? hot.h + pad * 2 : 0;
+  // The dim layer is oversized (inset -OV) so camera pans never reveal an
+  // edge — clip coordinates are relative to its own box, so add OV.
+  const OV = 3000;
   const clip = ready
     ? hot
-      ? `polygon(0% 0%,100% 0%,100% 100%,0% 100%,0% ${sy}px,${sx}px ${sy}px,${sx}px ${sy + sh}px,${sx + sw}px ${sy + sh}px,${sx + sw}px ${sy}px,0% ${sy}px)`
+      ? `polygon(0% 0%,100% 0%,100% 100%,0% 100%,0% ${hy + OV}px,${hx + OV}px ${hy + OV}px,${hx + OV}px ${hy + hh + OV}px,${hx + hw + OV}px ${hy + hh + OV}px,${hx + hw + OV}px ${hy + OV}px,0% ${hy + OV}px)`
       : "polygon(0% 0%,100% 0%,100% 100%,0% 100%)"
     : undefined;
   const ripple = step.click && tIn >= clickAt && tIn < clickAt + 800;
@@ -127,9 +152,7 @@ export default function TrainingPlayer({ lesson }: { lesson: Lesson }) {
       {/* title bar */}
       <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-2 w-2 shrink-0 items-center justify-center">
-            <span className={`h-2 w-2 rounded-full ${playing ? "animate-pulse bg-red-400" : "bg-white/30"}`} />
-          </span>
+          <span className={`h-2 w-2 shrink-0 rounded-full ${playing ? "animate-pulse bg-red-400" : "bg-white/30"}`} />
           <p className="truncate text-sm font-bold text-white">{lesson.title}</p>
           <span className="shrink-0 text-[10px] uppercase tracking-widest text-white/35">
             Guided walkthrough · {Math.ceil(total / 1000)}s
@@ -146,24 +169,37 @@ export default function TrainingPlayer({ lesson }: { lesson: Lesson }) {
       </div>
 
       {/* stage */}
-      <div ref={wrapRef} className="relative">
-        <div ref={viewRef} style={{ aspectRatio: `${STAGE_W} / 640` }} className="relative overflow-hidden bg-[#070b16]">
+      <div ref={viewRef} style={{ aspectRatio: `${STAGE_W} / 640` }} className="relative overflow-hidden bg-[#070b16]">
+        <div style={{ transform: `scale(${scale})`, transformOrigin: "0 0", width: STAGE_W, height: SCENE_H, position: "absolute", left: 0, top: 0, overflow: "hidden" }}>
+          {/* camera layer — pans + zooms to the action */}
           <div
-            style={{ transform: `scale(${scale})`, transformOrigin: "0 0", width: STAGE_W, height: SCENE_H, position: "absolute", left: 0, top: 0 }}
+            style={{
+              transform: `scale(${camScale}) translate(${-camX}px, ${-camY}px)`,
+              transformOrigin: "0 0",
+              transition: "transform 1.1s cubic-bezier(.3,.7,.25,1)",
+              width: STAGE_W,
+              height: SCENE_H,
+            }}
           >
-            <div className="h-full w-full overflow-hidden">
-              <div ref={sceneRef} style={{ transform: `translateY(${ty}px)`, transition: "transform 900ms cubic-bezier(.22,.8,.3,1)" }}>
-                <Scene variant={variant} />
-              </div>
+            <div
+              ref={sceneRef}
+              // zoom scales layout itself, so everything renders ~20% larger —
+              // the wrapper is narrowed to compensate and still fills the stage.
+              style={{ zoom: 1.2, width: STAGE_W / 1.2 }}
+            >
+              <Scene variant={variant} />
             </div>
 
             {ready && clip && (
               <>
-                <div className="pointer-events-none absolute inset-0 z-20" style={{ clipPath: clip, background: "rgba(3,6,15,0.78)", transition: "clip-path 600ms ease" }} />
+                <div
+                  className="pointer-events-none absolute z-20"
+                  style={{ inset: -OV, clipPath: clip, background: "rgba(3,6,15,0.72)", transition: "clip-path 1.1s cubic-bezier(.3,.7,.25,1)" }}
+                />
                 {hot && (
                   <div
-                    className="pointer-events-none absolute z-30 animate-pulse rounded-xl border-2 border-brand-light/90 shadow-[0_0_24px_-2px_rgba(248,113,113,0.8),inset_0_0_24px_-10px_rgba(248,113,113,0.8)]"
-                    style={{ left: sx, top: sy, width: sw, height: sh, transition: "all 600ms ease" }}
+                    className="pointer-events-none absolute z-30 animate-pulse rounded-xl border-2 border-brand-light/90 shadow-[0_0_28px_-2px_rgba(248,113,113,0.85),inset_0_0_28px_-10px_rgba(248,113,113,0.85)]"
+                    style={{ left: hx, top: hy, width: hw, height: hh, transition: "all 1.1s cubic-bezier(.3,.7,.25,1)" }}
                   />
                 )}
               </>
@@ -172,13 +208,13 @@ export default function TrainingPlayer({ lesson }: { lesson: Lesson }) {
             {ready && hot && (
               <svg
                 viewBox="0 0 24 24"
-                className="pointer-events-none absolute z-40 h-6 w-6"
+                className="pointer-events-none absolute z-40 h-7 w-7"
                 style={{
-                  left: cx - 2,
-                  top: cy - 2,
+                  left: cxL - 2,
+                  top: cyL - 2,
                   fill: "#fff",
-                  filter: "drop-shadow(0 2px 6px rgba(0,0,0,.85))",
-                  transition: "left 950ms cubic-bezier(.22,.8,.3,1), top 950ms cubic-bezier(.22,.8,.3,1)",
+                  filter: "drop-shadow(0 2px 6px rgba(0,0,0,.9))",
+                  transition: "left 1s cubic-bezier(.3,.7,.25,1), top 1s cubic-bezier(.3,.7,.25,1)",
                 }}
               >
                 <path d="M4 2l16 11.2-9.2 1.2L7.6 22 4 2z" />
@@ -187,29 +223,68 @@ export default function TrainingPlayer({ lesson }: { lesson: Lesson }) {
             {ready && hot && ripple && (
               <span
                 className="pointer-events-none absolute z-30 h-16 w-16 animate-ping rounded-full border-2 border-white/80"
-                style={{ left: cx - 32, top: cy - 32, animationIterationCount: 2 }}
+                style={{ left: cxL - 32, top: cyL - 32, animationIterationCount: 2 }}
               />
             )}
-
-            {/* caption */}
-            {ready && (
-              <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center pb-3">
-                <div className="glass mx-4 w-full max-w-3xl rounded-2xl px-5 py-3">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-brand-light">
-                    {idx + 1}/{steps.length} · {step.chapter}
-                  </p>
-                  <p className="mt-1 min-h-[2.4rem] text-[13px] leading-snug text-white/90">
-                    {step.caption.slice(0, chars)}
-                    <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-[2px] animate-pulse bg-white/70" />
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* subtitle bar — video-style captions, outside the camera */}
+          {ready && t < total && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex justify-center pb-4">
+              <div className="mx-4 w-full max-w-4xl rounded-2xl bg-black/75 px-6 py-4 ring-1 ring-white/15 backdrop-blur-md">
+                <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-light">
+                  {idx + 1} / {steps.length} · {step.chapter}
+                </p>
+                <p className="mt-1.5 min-h-[3rem] text-[17px] font-medium leading-snug text-white">
+                  {step.caption.slice(0, chars)}
+                  <span className="ml-1 inline-block h-4 w-[2.5px] translate-y-[3px] animate-pulse bg-white/80" />
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* end card */}
+        {ready && t >= total && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#070b16]/85 backdrop-blur-sm">
+            <div className="glass max-w-md rounded-3xl p-8 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-400/40">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+              </span>
+              <p className="mt-4 text-lg font-bold text-white">Lesson complete</p>
+              <p className="mt-1 text-sm text-white/60">
+                Now try it for real — the walkthrough matches the live section
+                click-for-click.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => { setT(0); setPlaying(true); }}
+                  className="rounded-full border border-white/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-white/70 hover:border-white/50 hover:text-white"
+                >
+                  ↺ Watch again
+                </button>
+                <Link
+                  href={lesson.liveHref}
+                  className="rounded-full bg-gradient-to-r from-brand to-brand-light px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-white shadow-lg shadow-brand/30"
+                >
+                  Open live →
+                </Link>
+                {next && (
+                  <Link
+                    href={next.href}
+                    className="rounded-full border border-white/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-white/70 hover:border-white/50 hover:text-white"
+                  >
+                    Next: {next.title} →
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* segmented progress */}
-        <div className="flex h-1.5 bg-white/5">
+        <div className="absolute bottom-0 left-0 right-0 z-50 flex h-1.5 bg-white/5">
           {steps.map((s, i) => {
             const w = ((bounds[i] - (i === 0 ? 0 : bounds[i - 1])) / total) * 100;
             const fill = i < idx ? 100 : i > idx ? 0 : (tIn / dur) * 100;

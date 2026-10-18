@@ -35,7 +35,14 @@ export default async function TrainingPage({
   if (active) {
     return (
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_280px]">
-        <TrainingPlayer lesson={active} />
+        <TrainingPlayer
+          lesson={active}
+          next={(() => {
+            const i = LESSONS.indexOf(active);
+            const n = LESSONS[i + 1];
+            return n ? { href: `/admin/training?lesson=${n.id}`, title: n.title } : undefined;
+          })()}
+        />
         <div className="space-y-4">
           <div className={`${glass} p-5`}>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
