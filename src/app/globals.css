@@ -657,6 +657,30 @@ body {
   animation: holo-ping 1.8s ease-out infinite;
 }
 
+/* Training player: organic idle drift so the cursor feels alive between
+   moves, a stroke that draws itself around the spotlighted element, and a
+   quick press when it "clicks". */
+@keyframes cursor-idle {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(6px, -5px); }
+  50% { transform: translate(-5px, 4px); }
+  75% { transform: translate(4px, 6px); }
+}
+
+.animate-cursor-idle {
+  animation: cursor-idle 5s ease-in-out infinite;
+}
+
+@keyframes ring-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.animate-ring-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ring-draw 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+
 /* ---------- Admin: holographic theme remap ----------
    The CRM pages were written against a light palette (white cards, slate
    text). Rather than rewrite every page, the admin shell is wrapped in
@@ -882,7 +906,9 @@ body {
   .animate-holo-drift,
   .animate-draw,
   .animate-grow-y,
-  .animate-holo-ping {
+  .animate-holo-ping,
+  .animate-cursor-idle,
+  .animate-ring-draw {
     animation: none !important;
     opacity: 1;
     stroke-dashoffset: 0;

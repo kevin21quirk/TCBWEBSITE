@@ -1,7 +1,7 @@
 "use client";
 
 import { AreaChart, Bars, RankBars } from "../DashboardCharts";
-import { AppFrame, Spot, SpotInline, pTitle } from "./data";
+import { AppFrame, Field, Spot, SpotInline, pTitle, type Typing } from "./data";
 
 const glass = "glass rounded-2xl";
 
@@ -107,10 +107,10 @@ const LEADS = [
   { id: 5, name: "David Turner", co: "", title: "", email: "dt@jmailservice.com", phone: "07700 900888", status: "New", score: "Cold 19", spam: true, val: "—", owner: "—" },
 ];
 
-export function LeadsScene({ variant }: { variant: string | null }) {
+export function LeadsScene({ variant, typing }: { variant: string | null; typing?: Typing }) {
   const selected = variant === "spam_selected";
   const deleted = variant === "spam_deleted" || variant === "open_lead";
-  if (variant === "open_lead") return <LeadDetailScene />;
+  if (variant === "open_lead") return <LeadDetailScene typing={typing} />;
   const rows = deleted ? LEADS.filter((l) => !l.spam) : LEADS;
   return (
     <AppFrame nav="/admin/leads">
@@ -125,7 +125,7 @@ export function LeadsScene({ variant }: { variant: string | null }) {
         </div>
         <Spot id="filters" className={`${glass} space-y-2 p-3`}>
           <div className="flex gap-2">
-            <span className="w-64 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/40">Search name, email, phone or company…</span>
+            <Field id="search" placeholder="Search name, email, phone or company…" typing={typing} className="w-64 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/40" />
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/60">All sources</span>
             <span className="rounded-full bg-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Filter</span>
           </div>
@@ -202,7 +202,7 @@ export function LeadsScene({ variant }: { variant: string | null }) {
 
 /* ------------------------- lead detail mini ------------------------ */
 
-function LeadDetailScene() {
+function LeadDetailScene({ typing }: { typing?: Typing }) {
   const chip = "rounded-xl border border-white/15 px-3 py-2 text-[10px] font-semibold text-white/70";
   return (
     <AppFrame nav="/admin/leads">
@@ -247,7 +247,7 @@ function LeadDetailScene() {
             <p className={pTitle}>Activity timeline</p>
             <div className="mt-2 flex gap-2">
               <span className="w-24 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-[10px] text-white/60">Call ▾</span>
-              <span className="flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-[10px] text-white/40">Call outcome, meeting notes…</span>
+              <Field id="loginput" placeholder="Call outcome, meeting notes…" typing={typing} className="flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-[10px] text-white/40" />
               <span className="rounded-lg bg-white/15 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Log</span>
             </div>
             {[
@@ -382,7 +382,7 @@ export function PipelineScene({ variant }: { variant: string | null }) {
 
 /* ============================== RADAR ============================== */
 
-export function RadarScene({ variant }: { variant: string | null }) {
+export function RadarScene({ variant, typing }: { variant: string | null; typing?: Typing }) {
   const officers = variant === "officers" || variant === "person_added";
   const added = variant === "person_added";
   const rows = [
@@ -406,7 +406,7 @@ export function RadarScene({ variant }: { variant: string | null }) {
           ))}
         </Spot>
         <Spot id="scanform" className={`${glass} flex items-center gap-2 p-3`}>
-          <span className="flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40">Company name includes… e.g. construction, medical, IT</span>
+          <Field id="q" placeholder="Company name includes… e.g. construction, medical, IT" typing={typing} className="flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40" />
           <span className="w-32 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40">Location…</span>
           <span className="w-36 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/60">Recruitment agencies ▾</span>
           <span className="rounded-lg bg-gradient-to-r from-brand to-brand-light px-5 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Scan</span>
@@ -463,7 +463,7 @@ export function RadarScene({ variant }: { variant: string | null }) {
 
 /* =========================== PROSPECTING =========================== */
 
-export function ProspectingScene({ variant }: { variant: string | null }) {
+export function ProspectingScene({ variant, typing }: { variant: string | null; typing?: Typing }) {
   const filled = variant === "researched";
   return (
     <AppFrame nav="/admin/prospecting">
@@ -497,9 +497,13 @@ export function ProspectingScene({ variant }: { variant: string | null }) {
                 ))}
               </Spot>
               <Spot id="saveform" className="mt-2 flex gap-1.5">
-                <span className={`flex-1 rounded-lg border px-2 py-1.5 text-[10px] ${filled ? "border-[#0a66c2]/60 text-white/80" : "border-white/15 text-white/35"}`}>
-                  {filled ? "linkedin.com/in/priyashah-bright" : "Paste profile URL"}
-                </span>
+                {filled ? (
+                  <span data-spot="url" className="flex-1 rounded-lg border border-[#0a66c2]/60 px-2 py-1.5 text-[10px] text-white/80">
+                    linkedin.com/in/priyashah-bright
+                  </span>
+                ) : (
+                  <Field id="url" placeholder="Paste profile URL" typing={typing} className="flex-1 rounded-lg border border-white/15 px-2 py-1.5 text-[10px] text-white/35" />
+                )}
                 <span className="w-24 rounded-lg border border-white/15 px-2 py-1.5 text-[10px] text-white/60">Job title</span>
                 <span className="w-24 rounded-lg border border-white/15 px-2 py-1.5 text-[10px] text-white/60">Company</span>
                 <span className={`rounded-lg px-3 py-1.5 text-[9px] font-semibold uppercase tracking-wider text-white ${filled ? "bg-[#0a66c2] shadow-[0_0_16px_-2px_#0a66c2]" : "bg-[#0a66c2]/70"}`}>Save</span>

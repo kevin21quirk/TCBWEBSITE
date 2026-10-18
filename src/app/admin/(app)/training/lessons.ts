@@ -58,7 +58,8 @@ export const LESSONS: Lesson[] = [
       {
         chapter: "Filters & search",
         caption: "The leads table lists every enquiry: contact form, referrals, LinkedIn — all of it. Filter by stage, by source, or search any name, email, phone or company.",
-        spot: "filters",
+        spot: "search",
+        type: "sarah jones",
       },
       {
         chapter: "Likely spam filter",
@@ -116,7 +117,8 @@ export const LESSONS: Lesson[] = [
       {
         chapter: "Log an activity",
         caption: "Log every touchpoint — calls, emails, meetings, LinkedIn. This builds the timeline, feeds the lead score and keeps the rest of the team in the loop.",
-        spot: "timeline",
+        spot: "loginput",
+        type: "Called — sending the umbrella comparison",
         scroll: true,
       },
       {
@@ -193,7 +195,8 @@ export const LESSONS: Lesson[] = [
       {
         chapter: "Custom scan",
         caption: "Or build your own: keyword in the company name, a location filter, and an industry preset covering the right SIC codes. Hit Scan to run it live.",
-        spot: "scanform",
+        spot: "q",
+        type: "construction",
         click: true,
       },
       {
@@ -242,7 +245,8 @@ export const LESSONS: Lesson[] = [
       {
         chapter: "Save the profile",
         caption: "Found them? Paste the profile URL, confirm the job title and company while you're looking, then Save — the lead is enriched and leaves the queue.",
-        spot: "saveform",
+        spot: "url",
+        type: "linkedin.com/in/priyashah-bright",
         click: true,
         set: "researched",
       },

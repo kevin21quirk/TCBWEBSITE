@@ -4,7 +4,9 @@ import type { ComponentType, ReactNode } from "react";
 /*  Lesson model                                                       */
 /* ------------------------------------------------------------------ */
 
-export type Scene = ComponentType<{ variant: string | null }>;
+export type Typing = { spot: string; text: string; chars: number } | null;
+
+export type Scene = ComponentType<{ variant: string | null; typing?: Typing }>;
 
 export type Step = {
   /** Short label shown in the chapter strip. */
@@ -19,6 +21,8 @@ export type Step = {
   scroll?: boolean;
   /** Cursor click ripple at ~60% into the step. */
   click?: boolean;
+  /** Type this text into the spotlighted input during the step. */
+  type?: string;
   /** Variant string passed to the scene after the click lands. */
   set?: string;
 };
@@ -173,6 +177,33 @@ export function SpotInline({ id, className = "", children }: { id: string; class
   return (
     <span data-spot={id} className={`inline-block ${className}`}>
       {children}
+    </span>
+  );
+}
+
+/** Mock input that displays typed characters while the player "types" into it. */
+export function Field({
+  id,
+  placeholder,
+  typing,
+  className = "",
+}: {
+  id: string;
+  placeholder: string;
+  typing?: Typing;
+  className?: string;
+}) {
+  const active = typing && typing.spot === id && typing.chars > 0;
+  return (
+    <span data-spot={id} className={className}>
+      {active ? (
+        <span className="text-white">
+          {typing.text.slice(0, typing.chars)}
+          <span className="ml-px inline-block h-3 w-[2px] animate-pulse bg-white/80 align-middle" />
+        </span>
+      ) : (
+        placeholder
+      )}
     </span>
   );
 }

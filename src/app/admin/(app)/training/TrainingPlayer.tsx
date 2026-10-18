@@ -144,6 +144,15 @@ export default function TrainingPlayer({
       : "polygon(0% 0%,100% 0%,100% 100%,0% 100%)"
     : undefined;
   const ripple = step.click && tIn >= clickAt && tIn < clickAt + 800;
+  const pressing = ripple;
+  const clickCue = step.click && tIn >= clickAt - 1200 && tIn < clickAt + 300;
+  const typeChars = step.type
+    ? Math.min(step.type.length, Math.max(0, Math.floor((tIn - 900) / 55)))
+    : 0;
+  const typing =
+    step.type && step.spot && !variant
+      ? { spot: step.spot, text: step.type, chars: typeChars }
+      : null;
 
   const btn = "flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/70 transition-colors hover:border-white/40 hover:text-white";
 
@@ -187,7 +196,7 @@ export default function TrainingPlayer({
               // the wrapper is narrowed to compensate and still fills the stage.
               style={{ zoom: 1.2, width: STAGE_W / 1.2 }}
             >
-              <Scene variant={variant} />
+              <Scene variant={variant} typing={typing} />
             </div>
 
             {ready && clip && (
@@ -197,28 +206,62 @@ export default function TrainingPlayer({
                   style={{ inset: -OV, clipPath: clip, background: "rgba(3,6,15,0.72)", transition: "clip-path 1.1s cubic-bezier(.3,.7,.25,1)" }}
                 />
                 {hot && (
-                  <div
-                    className="pointer-events-none absolute z-30 animate-pulse rounded-xl border-2 border-brand-light/90 shadow-[0_0_28px_-2px_rgba(248,113,113,0.85),inset_0_0_28px_-10px_rgba(248,113,113,0.85)]"
-                    style={{ left: hx, top: hy, width: hw, height: hh, transition: "all 1.1s cubic-bezier(.3,.7,.25,1)" }}
-                  />
+                  <>
+                    <div
+                      className="pointer-events-none absolute z-30 animate-pulse rounded-xl border border-brand-light/50 shadow-[0_0_28px_-2px_rgba(248,113,113,0.85),inset_0_0_28px_-10px_rgba(248,113,113,0.85)]"
+                      style={{ left: hx, top: hy, width: hw, height: hh, transition: "all 1.1s cubic-bezier(.3,.7,.25,1)" }}
+                    />
+                    {/* ring that draws itself around the target on each step */}
+                    <svg
+                      key={`ring-${idx}`}
+                      className="pointer-events-none absolute z-30 overflow-visible"
+                      style={{ left: hx - 4, top: hy - 4, width: hw + 8, height: hh + 8 }}
+                      viewBox={`0 0 ${hw + 8} ${hh + 8}`}
+                    >
+                      <rect
+                        x="2" y="2" width={hw + 4} height={hh + 4} rx="12"
+                        fill="none" stroke="#fca5a5" strokeWidth="2.5"
+                        pathLength={1} className="animate-ring-draw"
+                      />
+                    </svg>
+                    {/* beacon pulses on click targets */}
+                    {step.click && tIn < clickAt + 400 && [0, 0.9].map((d) => (
+                      <span
+                        key={d}
+                        className="pointer-events-none absolute z-20 animate-holo-ping rounded-full border-2 border-white/50"
+                        style={{ left: cxL - 40, top: cyL - 40, width: 80, height: 80, animationDelay: `${d}s` }}
+                      />
+                    ))}
+                  </>
                 )}
               </>
             )}
 
             {ready && hot && (
-              <svg
-                viewBox="0 0 24 24"
-                className="pointer-events-none absolute z-40 h-7 w-7"
+              <div
+                className="pointer-events-none absolute z-40"
                 style={{
                   left: cxL - 2,
                   top: cyL - 2,
-                  fill: "#fff",
-                  filter: "drop-shadow(0 2px 6px rgba(0,0,0,.9))",
                   transition: "left 1s cubic-bezier(.3,.7,.25,1), top 1s cubic-bezier(.3,.7,.25,1)",
                 }}
               >
-                <path d="M4 2l16 11.2-9.2 1.2L7.6 22 4 2z" />
-              </svg>
+                {/* "Click" cue chip just before the press lands */}
+                {clickCue && (
+                  <span className="absolute left-5 top-5 rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 shadow-lg">
+                    Click
+                  </span>
+                )}
+                <div className="animate-cursor-idle">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`h-7 w-7 transition-transform duration-150 ${pressing ? "scale-[0.6]" : ""}`}
+                    style={{ fill: "#fff", filter: "drop-shadow(0 2px 6px rgba(0,0,0,.9))" }}
+                  >
+                    <path d="M4 2l16 11.2-9.2 1.2L7.6 22 4 2z" />
+                  </svg>
+                </div>
+              </div>
             )}
             {ready && hot && ripple && (
               <span
