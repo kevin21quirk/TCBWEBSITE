@@ -241,7 +241,7 @@ export const LESSONS: Lesson[] = [
       },
       {
         chapter: "Add a director",
-        caption: "+ Add as lead turns a named director into a fully-linked CRM lead in one click — and in ↗ jumps straight to their LinkedIn search.",
+        caption: "+ Add as lead turns a named director into a fully-linked lead in one click, and the in / SN / X-ray buttons open LinkedIn, Sales Navigator and Google searches built for that person.",
         spot: "addlead",
         scroll: true,
         click: true,

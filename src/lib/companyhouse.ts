@@ -174,6 +174,36 @@ function titleCaseRole(role: string) {
 }
 
 /**
+ * LinkedIn/Google searches for a named officer. Companies House company
+ * names are all-caps legal names ("NODUS SYSTEMS LTD") that don't match
+ * anything on LinkedIn — the person hasn't listed the new company as an
+ * employer yet — so person searches key off the name alone. The cleaned
+ * company only goes into the Google X-ray as a quoted hint.
+ */
+export function officerSearches(name: string, company: string) {
+  const co = titleCase(
+    company.replace(/[\s,]+(ltd|limited|llp|plc|llc|inc)\.?$/i, "").trim()
+  );
+  return [
+    {
+      short: "in ↗",
+      label: "LinkedIn people search",
+      href: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(name)}`,
+    },
+    {
+      short: "SN ↗",
+      label: "Sales Navigator people search",
+      href: `https://www.linkedin.com/sales/search/people?query=(keywords:${encodeURIComponent(name)})`,
+    },
+    {
+      short: "X-ray ↗",
+      label: `Google X-ray — linkedin.com/in pages matching "${name}"`,
+      href: `https://www.google.com/search?q=${encodeURIComponent(`site:linkedin.com/in "${name}"${co ? ` "${co}"` : ""}`)}`,
+    },
+  ];
+}
+
+/**
  * The directors/officers registered against a company — turns an anonymous
  * company prospect into named people to contact.
  */

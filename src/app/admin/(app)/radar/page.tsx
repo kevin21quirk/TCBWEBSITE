@@ -6,6 +6,7 @@ import {
   SIC_PRESETS,
   getOfficers,
   isConfigured,
+  officerSearches,
   searchCompanies,
   type Prospect,
 } from "@/lib/companyhouse";
@@ -357,7 +358,6 @@ export default async function RadarPage({
                           {officers.items.map((o) => {
                             const personKey = `${o.name.toLowerCase()}|${p.companyName.toLowerCase()}`;
                             const personInCrm = existingPeople.has(personKey);
-                            const linkedinSearch = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(`${o.name} ${p.companyName}`)}`;
                             return (
                               <li
                                 key={o.name + o.role}
@@ -411,15 +411,18 @@ export default async function RadarPage({
                                       </button>
                                     </form>
                                   )}
-                                  <a
-                                    href={linkedinSearch}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    title="Find this person on LinkedIn"
-                                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-[#0a66c2] hover:text-[#0a66c2]"
-                                  >
-                                    in ↗
-                                  </a>
+                                  {officerSearches(o.name, p.companyName).map((s) => (
+                                    <a
+                                      key={s.short}
+                                      href={s.href}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title={s.label}
+                                      className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-[#0a66c2] hover:text-[#0a66c2]"
+                                    >
+                                      {s.short}
+                                    </a>
+                                  ))}
                                 </div>
                               </li>
                             );

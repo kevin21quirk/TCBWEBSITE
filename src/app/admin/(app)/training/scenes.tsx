@@ -494,7 +494,9 @@ export function RadarScene({ variant, typing }: { variant: string | null; typing
                           ) : (
                             <span className="rounded-full bg-gradient-to-r from-brand to-brand-light px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider">+ Add as lead</span>
                           )}
-                          <span className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">in ↗</span>
+                          {["in ↗", "SN ↗", "X-ray ↗"].map((s) => (
+                            <span key={s} className="rounded-lg border border-white/15 px-2 py-1 text-[9px] font-semibold text-white/60">{s}</span>
+                          ))}
                         </div>
                       </div>
                     ))}
