@@ -474,6 +474,217 @@ body {
   100% { transform: translateY(-340px) rotate(200deg); opacity: 0; }
 }
 
+/* ---------- Admin dashboard: holographic glass scene ---------- */
+
+.holo-scene {
+  perspective: 1600px;
+}
+
+/* Frosted panel: translucent fill, hairline edge, inner top highlight */
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.04) 45%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 20px 60px -20px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* Pointer-tracked glare that slides across the pane. Sits at z -1 inside
+   the pane's own stacking context: above its fill, below its content. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 0%),
+    rgba(255, 255, 255, 0.14),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.glass:hover::before,
+.glass[data-active="true"]::before {
+  opacity: 1;
+}
+
+/* 3D tilt card — transform is driven from JS via custom properties.
+   Perspective lives on the card itself so it works at any nesting depth. */
+.holo-card {
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: perspective(1200px) rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg)) translateZ(var(--tz, 0px));
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s ease,
+    border-color 0.4s ease;
+  will-change: transform;
+}
+
+.holo-card:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 0 1px rgba(220, 38, 38, 0.12),
+    0 30px 80px -24px rgba(220, 38, 38, 0.35),
+    0 25px 60px -20px rgba(0, 0, 0, 0.7);
+}
+
+.holo-card.is-tracking {
+  transition:
+    transform 0.08s linear,
+    box-shadow 0.5s ease,
+    border-color 0.4s ease;
+}
+
+/* Elements inside a card can float off its surface */
+.holo-lift {
+  transform: translateZ(var(--lift, 24px));
+}
+
+/* Materialise: panels rotate up out of the floor as they land. Applied to
+   a wrapper, never the tilting card itself (the fill-mode would pin its
+   transform), and deliberately without filter (which would re-root the
+   children's backdrop-filter and flatten the frosted look). */
+@keyframes holo-in {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) translateY(40px) rotateX(18deg) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-holo-in {
+  transform-origin: 50% 100%;
+  animation: holo-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Background: slow colour drift + perspective grid floor */
+@keyframes holo-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, -4%, 0) scale(1.12);
+  }
+}
+
+.animate-holo-drift {
+  animation: holo-drift 18s ease-in-out infinite;
+}
+
+.holo-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  transform: perspective(900px) rotateX(62deg) translateY(-10%) scale(1.6);
+  transform-origin: 50% 100%;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent 75%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent 75%);
+}
+
+/* Horizontal scan beam */
+@keyframes holo-scan {
+  from {
+    transform: translateY(-20vh);
+  }
+  to {
+    transform: translateY(120vh);
+  }
+}
+
+.animate-holo-scan {
+  animation: holo-scan 11s linear infinite;
+}
+
+/* Chart line drawing in */
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+}
+
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.animate-grow-y {
+  transform-origin: 50% 100%;
+  transform-box: fill-box;
+  animation: grow-y 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes holo-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+.animate-holo-ping {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: holo-ping 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holo-card,
+  .holo-lift {
+    transform: none !important;
+  }
+
+  .animate-holo-in,
+  .animate-holo-drift,
+  .animate-holo-scan,
+  .animate-draw,
+  .animate-grow-y,
+  .animate-holo-ping {
+    animation: none !important;
+    opacity: 1;
+    stroke-dashoffset: 0;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sa-anim,
   .sa-anim * {

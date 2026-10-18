@@ -1,7 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
 import { logoutAction } from "@/app/admin/actions";
-import AdminMobileNav from "@/app/admin/(app)/AdminMobileNav";
+import AdminHeader from "@/app/admin/(app)/AdminHeader";
 import AdminNav from "@/app/admin/(app)/AdminNav";
 import { requireUser } from "@/lib/auth";
 
@@ -60,25 +59,11 @@ export default async function AdminLayout({
 
       {/* content */}
       <div className="min-w-0 flex-1 lg:ml-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white/80 px-4 backdrop-blur sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <AdminMobileNav
-              isSuperAdmin={user.role === "super_admin"}
-              userName={user.name}
-              roleLabel={user.role === "super_admin" ? "Super Admin" : "Staff"}
-            />
-            <p className="truncate text-sm text-slate-500">
-              Welcome back,{" "}
-              <span className="font-semibold text-ink">{user.name}</span>
-            </p>
-          </div>
-          <Link
-            href="/"
-            className="shrink-0 text-xs font-semibold uppercase tracking-widest text-slate-500 transition-colors hover:text-brand"
-          >
-            View website →
-          </Link>
-        </header>
+        <AdminHeader
+          isSuperAdmin={user.role === "super_admin"}
+          userName={user.name}
+          roleLabel={user.role === "super_admin" ? "Super Admin" : "Staff"}
+        />
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
