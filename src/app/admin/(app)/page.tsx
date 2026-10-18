@@ -7,14 +7,17 @@ import {
   dealValue,
   money,
   scoreLead,
+  spamSignals,
   type FollowUp,
   type Lead,
   type LeadStats,
   type LeadStatus,
 } from "@/lib/crm";
+import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { AreaChart, Bars, Donut, Gauge, RankBars } from "./DashboardCharts";
-import { CountUp, HoloBackdrop, HoloCard, LiveClock } from "./DashboardFx";
+import { CountUp, HoloCard, LiveClock } from "./DashboardFx";
+import { QuickDelete, SpamBadge } from "./leads/SpamControls";
 
 export const metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -55,6 +58,8 @@ const panelTitle = "text-[11px] font-bold uppercase tracking-[0.2em] text-white/
 const linkCta = "text-[11px] font-semibold uppercase tracking-widest text-brand-light transition-colors hover:text-white";
 
 export default async function DashboardPage() {
+  const user = await requireUser();
+  const canDelete = user.role === "super_admin";
   const [
     counts,
     recent,
@@ -169,10 +174,20 @@ export default async function DashboardPage() {
   const qualifiedNoValue = scored.filter(
     (s) => s.lead.status === "qualified" && !dealValue(s.lead)
   );
+  const recentLeads = (recent as Lead[]).map((l) => ({ ...l, spam: spamSignals(l) }));
+  const spamOpen = scored.filter((s) => spamSignals(s.lead).length).length;
 
   /* ---------- suggestions engine ---------- */
 
   const suggestions: Suggestion[] = [];
+  if (spamOpen)
+    suggestions.push({
+      level: "warn",
+      title: `${spamOpen} open lead${spamOpen > 1 ? "s look" : " looks"} like form spam`,
+      detail: "Links, pitches or gibberish names from the website form. Review and bulk-delete to keep the pipeline clean.",
+      href: "/admin/leads?spam=1",
+      cta: "Review spam",
+    });
   if (overdueCount)
     suggestions.push({
       level: "urgent",
@@ -318,10 +333,8 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="holo-scene relative -m-4 min-h-[calc(100vh-4rem)] overflow-hidden p-4 text-white sm:-m-6 sm:p-6 lg:-m-8 lg:p-8">
-      <HoloBackdrop />
-
-      <div className="relative space-y-6">
+    <div className="relative text-white">
+      <div className="space-y-6">
         {/* command deck header */}
         <div className="animate-holo-in flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -616,26 +629,42 @@ export default async function DashboardPage() {
               <Link href="/admin/leads" className={linkCta}>View all →</Link>
             </div>
             <div className="mt-3 divide-y divide-white/[0.06] pb-2">
-              {(recent as Lead[]).map((l) => (
-                <Link
+              {recentLeads.map((l) => (
+                <div
                   key={l.id}
-                  href={`/admin/leads/${l.id}`}
-                  className="flex items-center justify-between gap-3 px-6 py-3 transition-colors hover:bg-white/5"
+                  className={`group flex items-center gap-2 pl-6 pr-3 transition-colors hover:bg-white/5 ${
+                    l.spam.length ? "bg-red-500/[0.07]" : ""
+                  }`}
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{l.name}</p>
-                    <p className="truncate text-xs text-white/50">{l.email ?? "—"} · {l.source}</p>
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                      style={{ color: STATUS_HEX[l.status], background: `${STATUS_HEX[l.status]}22`, boxShadow: `inset 0 0 0 1px ${STATUS_HEX[l.status]}55` }}
-                    >
-                      {STATUS_STYLES[l.status].label}
-                    </span>
-                    <span className="text-[10px] text-white/35">{fmt.format(new Date(l.created_at))}</span>
-                  </div>
-                </Link>
+                  <Link
+                    href={`/admin/leads/${l.id}`}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-3 py-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold">{l.name}</p>
+                        <SpamBadge reasons={l.spam} />
+                      </div>
+                      <p className="truncate text-xs text-white/50">{l.email ?? "—"} · {l.source}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                        style={{ color: STATUS_HEX[l.status], background: `${STATUS_HEX[l.status]}22`, boxShadow: `inset 0 0 0 1px ${STATUS_HEX[l.status]}55` }}
+                      >
+                        {STATUS_STYLES[l.status].label}
+                      </span>
+                      <span className="text-[10px] text-white/35">{fmt.format(new Date(l.created_at))}</span>
+                    </div>
+                  </Link>
+                  {canDelete && (
+                    <QuickDelete
+                      leadId={l.id}
+                      leadName={l.name}
+                      className={l.spam.length ? "" : "opacity-0 group-hover:opacity-100 focus:opacity-100"}
+                    />
+                  )}
+                </div>
               ))}
               {recent.length === 0 && (
                 <p className="px-6 py-10 text-center text-sm text-white/40">

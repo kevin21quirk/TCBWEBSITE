@@ -666,7 +666,222 @@ body {
   animation: holo-ping 1.8s ease-out infinite;
 }
 
+/* ---------- Admin: holographic theme remap ----------
+   The CRM pages were written against a light palette (white cards, slate
+   text). Rather than rewrite every page, the admin shell is wrapped in
+   .holo-theme, which re-targets those exact utilities onto the dark glass
+   scene. Scoped selectors out-rank the single-class utilities. */
+
+.holo-theme {
+  color: #fff;
+  color-scheme: dark;
+}
+
+.holo-theme option {
+  background: #0f172a;
+  color: #fff;
+}
+
+.holo-theme ::placeholder,
+.holo-theme .placeholder\:text-slate-400::placeholder,
+.holo-theme .placeholder\:text-slate-500::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* panes */
+.holo-theme .bg-white:not(img) {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.045) 45%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.holo-theme .shadow-sm {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 20px 60px -24px rgba(0, 0, 0, 0.7);
+}
+
+.holo-theme .bg-slate-50,
+.holo-theme .bg-slate-50\/40,
+.holo-theme .bg-slate-50\/60,
+.holo-theme .bg-slate-50\/80,
+.holo-theme .bg-slate-100,
+.holo-theme .bg-slate-200 {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.holo-theme .bg-slate-300 {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.holo-theme .bg-slate-400,
+.holo-theme .bg-slate-500 {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+.holo-theme .hover\:bg-slate-50:hover,
+.holo-theme .hover\:bg-slate-100:hover,
+.holo-theme .hover\:bg-slate-200:hover,
+.holo-theme .hover\:bg-white:hover,
+.holo-theme .focus\:bg-white:focus {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.holo-theme .bg-ink {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.1)
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.holo-theme .hover\:bg-slate-800:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.28),
+    rgba(255, 255, 255, 0.16)
+  );
+}
+
+/* text */
+.holo-theme .text-ink,
+.holo-theme .hover\:text-ink:hover {
+  color: #fff;
+}
+
+.holo-theme .text-slate-700,
+.holo-theme .text-slate-600 {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.holo-theme .text-slate-500 {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.holo-theme .text-slate-400 {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.holo-theme .text-slate-300 {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.holo-theme .text-brand {
+  color: #f87171;
+}
+
+.holo-theme .hover\:text-brand:hover {
+  color: #fca5a5;
+}
+
+.holo-theme .text-red-600,
+.holo-theme .hover\:text-red-600:hover {
+  color: #f87171;
+}
+
+.holo-theme .text-emerald-600 {
+  color: #34d399;
+}
+
+/* edges */
+.holo-theme .border-slate-100 {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.holo-theme .border-slate-200,
+.holo-theme .border-white {
+  border-color: rgba(255, 255, 255, 0.13);
+}
+
+.holo-theme .border-slate-300 {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.holo-theme .hover\:border-brand:hover {
+  border-color: #f87171;
+}
+
+.holo-theme .hover\:border-ink:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.holo-theme .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.holo-theme .ring-slate-200,
+.holo-theme .hover\:ring-slate-300:hover {
+  --tw-ring-color: rgba(255, 255, 255, 0.16);
+}
+
+.holo-theme .ring-ink {
+  --tw-ring-color: rgba(255, 255, 255, 0.3);
+}
+
+.holo-theme .border-red-100,
+.holo-theme .border-red-200,
+.holo-theme .hover\:border-red-200:hover {
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.holo-theme .border-emerald-200 {
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.holo-theme .border-amber-200 {
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+/* status / temperature pills: pastel → neon tint */
+.holo-theme .bg-sky-50 { background-color: rgba(56, 189, 248, 0.16); }
+.holo-theme .text-sky-700 { color: #7dd3fc; }
+.holo-theme .ring-sky-200 { --tw-ring-color: rgba(56, 189, 248, 0.45); }
+
+.holo-theme .bg-amber-50,
+.holo-theme .bg-amber-50\/60,
+.holo-theme .bg-amber-100,
+.holo-theme .bg-orange-50 { background-color: rgba(251, 191, 36, 0.16); }
+.holo-theme .text-amber-700,
+.holo-theme .text-amber-800 { color: #fcd34d; }
+.holo-theme .ring-amber-200 { --tw-ring-color: rgba(251, 191, 36, 0.45); }
+
+.holo-theme .bg-violet-50 { background-color: rgba(167, 139, 250, 0.18); }
+.holo-theme .text-violet-700 { color: #c4b5fd; }
+.holo-theme .ring-violet-200 { --tw-ring-color: rgba(167, 139, 250, 0.45); }
+
+.holo-theme .bg-emerald-50,
+.holo-theme .bg-emerald-50\/50,
+.holo-theme .bg-teal-50,
+.holo-theme .hover\:bg-emerald-50:hover,
+.holo-theme .hover\:bg-emerald-100:hover,
+.holo-theme .hover\:bg-teal-50\/40:hover { background-color: rgba(52, 211, 153, 0.16); }
+.holo-theme .text-emerald-700,
+.holo-theme .text-emerald-800 { color: #6ee7b7; }
+.holo-theme .ring-emerald-200 { --tw-ring-color: rgba(52, 211, 153, 0.45); }
+
+.holo-theme .bg-red-50,
+.holo-theme .bg-red-50\/60,
+.holo-theme .hover\:bg-red-50:hover { background-color: rgba(248, 113, 113, 0.16); }
+.holo-theme .text-red-700 { color: #fca5a5; }
+.holo-theme .ring-red-200,
+.holo-theme .hover\:ring-red-200:hover { --tw-ring-color: rgba(248, 113, 113, 0.45); }
+
+/* every pane materialises as it arrives */
+.holo-theme main > * {
+  animation: holo-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .holo-theme main > * {
+    animation: none;
+  }
+
   .holo-card,
   .holo-lift {
     transform: none !important;

@@ -1,16 +1,20 @@
 import Link from "next/link";
+import { requireUser } from "@/lib/auth";
 import {
   LEAD_STATUSES,
+  SPAM_DOMAINS,
   STATUS_STYLES,
   TEMPERATURE_STYLES,
   dealValue,
   money,
   scoreLead,
+  spamSignals,
   type Lead,
   type LeadStats,
   type LeadStatus,
 } from "@/lib/crm";
 import { sql } from "@/lib/db";
+import { BulkSelect, QuickDelete, SpamBadge } from "./SpamControls";
 
 export const metadata = { title: "Leads" };
 export const dynamic = "force-dynamic";
@@ -31,22 +35,36 @@ export default async function LeadsPage({
     source?: string;
     tag?: string;
     page?: string;
+    spam?: string;
   }>;
 }) {
-  const { q = "", status = "", source = "", tag = "", page = "1" } = await searchParams;
+  const user = await requireUser();
+  const canDelete = user.role === "super_admin";
+  const { q = "", status = "", source = "", tag = "", page = "1", spam = "" } = await searchParams;
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const offset = (pageNum - 1) * PAGE_SIZE;
   const pattern = `%${q}%`;
   const validStatus = (LEAD_STATUSES as readonly string[]).includes(status)
     ? (status as LeadStatus)
     : null;
+  const spamOnly = spam === "1";
 
+  // SQL approximation of spamSignals() so the filter spans all pages.
   const where = sql`
     WHERE (${q} = '' OR l.name ILIKE ${pattern} OR l.email ILIKE ${pattern}
            OR l.phone ILIKE ${pattern} OR l.company ILIKE ${pattern})
       AND (${validStatus}::text IS NULL OR l.status = ${validStatus})
       AND (${source} = '' OR l.source = ${source})
-      AND (${tag} = '' OR ${tag} = ANY(l.tags))`;
+      AND (${tag} = '' OR ${tag} = ANY(l.tags))
+      AND (${spamOnly} = false OR (l.source = 'contact form' AND (
+            lower(split_part(coalesce(l.email, ''), '@', 2)) = ANY(${SPAM_DOMAINS}::text[])
+         OR coalesce(l.message, '') ~* '(https?://|www\\.|\\m[a-z0-9-]+\\.(ru|xyz|top|click|live|site|online|icu|buzz)\\M)'
+         OR coalesce(l.message, '') ~* '(\\mseo\\M|backlinks?|guest post|advertising platform|(we''ve|we have) (developed|built)|(show|appear)(ing)? (up )?first|(website|site) (visits|visitors|traffic)|(more|targeted|drive|boost) (your )?(traffic|visitors|clicks|leads)|traffic estimates|\\m(crypto|bitcoin|forex|casino|viagra)\\M|click here|unsubscribe)'
+         OR (strpos(coalesce(l.message, ''), l.name) > 0
+             AND substr(l.message, strpos(l.message, l.name) + length(l.name), 1) ~ '[A-Za-z]')
+         OR l.name ~ '[0-9]' OR l.name !~* '[aeiouy]'
+         OR coalesce(l.email, '') ~* '\\.(ru|xyz|top|click|icu|buzz)$'
+         OR coalesce(l.message, '') ~ '[\u0400-\u04FF\u4E00-\u9FFF]')))`;
 
   const [rows, totalRows, sources] = await Promise.all([
     sql`SELECT l.*, u.name AS assignee_name,
@@ -64,10 +82,13 @@ export default async function LeadsPage({
   const total = (totalRows[0]?.n as number) ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const filters = { q, status, source, tag };
+  const filters = { q, status, source, tag, spam };
   const qs = (over: Record<string, string>) =>
     `/admin/leads?${new URLSearchParams({ ...filters, ...over }).toString()}`;
-  const exportHref = `/admin/leads/export?${new URLSearchParams(filters).toString()}`;
+  const exportHref = `/admin/leads/export?${new URLSearchParams({ q, status, source, tag }).toString()}`;
+
+  const leads = (rows as (Lead & LeadStats)[]).map((l) => ({ ...l, spam: spamSignals(l) }));
+  const spamOnPage = leads.filter((l) => l.spam.length).length;
 
   return (
     <div className="space-y-6">
@@ -120,6 +141,7 @@ export default async function LeadsPage({
           </select>
           <input type="hidden" name="status" value={status} />
           {tag && <input type="hidden" name="tag" value={tag} />}
+          {spam && <input type="hidden" name="spam" value={spam} />}
           <button
             type="submit"
             className="rounded-full bg-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-widest text-white transition-colors hover:bg-slate-800"
@@ -160,37 +182,69 @@ export default async function LeadsPage({
               {STATUS_STYLES[s].label}
             </Link>
           ))}
+          <Link
+            href={qs({ spam: spamOnly ? "" : "1", page: "1" })}
+            className={`ml-auto flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ring-1 transition-colors ${
+              spamOnly
+                ? "bg-red-50 text-red-700 ring-red-200"
+                : "bg-white text-slate-600 ring-slate-200 hover:ring-slate-300"
+            }`}
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+            </svg>
+            Likely spam
+          </Link>
         </div>
       </div>
 
       {/* table */}
+      <BulkSelect enabled={canDelete} spamCount={spamOnPage}>
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60 text-xs font-semibold uppercase tracking-widest text-slate-500">
-              <th className="px-6 py-4">Lead</th>
+              {canDelete && <th className="w-10 pl-5 pr-1 py-4" />}
+              <th className={`${canDelete ? "px-3" : "px-6"} py-4`}>Lead</th>
               <th className="px-4 py-4">Score</th>
               <th className="hidden px-4 py-4 md:table-cell">Contact</th>
               <th className="px-4 py-4">Stage</th>
               <th className="hidden px-4 py-4 lg:table-cell">Value</th>
               <th className="hidden px-4 py-4 lg:table-cell">Owner</th>
               <th className="hidden px-4 py-4 md:table-cell">Received</th>
+              {canDelete && <th className="w-12 px-2 py-4" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {(rows as (Lead & LeadStats)[]).map((l) => {
+            {leads.map((l) => {
               const { score, temperature } = scoreLead(l);
               const value = dealValue(l);
               return (
-                <tr key={l.id} className="transition-colors hover:bg-slate-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
+                <tr
+                  key={l.id}
+                  className={`transition-colors hover:bg-slate-50 ${l.spam.length ? "bg-red-50/60" : ""}`}
+                >
+                  {canDelete && (
+                    <td className="pl-5 pr-1 py-4 align-top">
+                      <input
+                        type="checkbox"
+                        name="ids"
+                        value={l.id}
+                        data-spam={l.spam.length ? "1" : "0"}
+                        aria-label={`Select ${l.name}`}
+                        className="mt-1 h-4 w-4 cursor-pointer rounded border-white/30 bg-white/10 accent-red-500"
+                      />
+                    </td>
+                  )}
+                  <td className={`${canDelete ? "px-3" : "px-6"} py-4`}>
+                    <div className="flex flex-wrap items-center gap-2">
                       <Link
                         href={`/admin/leads/${l.id}`}
                         className="font-semibold text-ink hover:text-brand"
                       >
                         {l.name}
                       </Link>
+                      <SpamBadge reasons={l.spam} />
                       {l.linkedin_url ? (
                         <a
                           href={l.linkedin_url}
@@ -256,19 +310,25 @@ export default async function LeadsPage({
                   <td className="hidden px-4 py-4 text-slate-500 md:table-cell">
                     {fmt.format(new Date(l.created_at))}
                   </td>
+                  {canDelete && (
+                    <td className="px-2 py-4 text-right">
+                      <QuickDelete leadId={l.id} leadName={l.name} />
+                    </td>
+                  )}
                 </tr>
               );
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-14 text-center text-slate-400">
-                  No leads match your filters.
+                <td colSpan={9} className="px-6 py-14 text-center text-slate-400">
+                  {spamOnly ? "Nothing looks like spam right now." : "No leads match your filters."}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+      </BulkSelect>
 
       {pages > 1 && (
         <div className="flex items-center justify-between text-sm text-slate-500">

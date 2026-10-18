@@ -614,6 +614,23 @@ export async function deleteLead(leadId: number) {
   redirect("/admin/leads");
 }
 
+/** Bulk delete (spam clean-up) — stays on the current page. */
+export async function deleteLeads(ids: number[]) {
+  await requireSuperAdmin();
+  const clean = [...new Set(ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+  if (!clean.length) return { deleted: 0 };
+  const rows = await sql`DELETE FROM leads WHERE id = ANY(${clean}::int[]) RETURNING id`;
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+  revalidatePath("/admin/pipeline");
+  revalidatePath("/admin/calendar");
+  return { deleted: rows.length };
+}
+
+export async function deleteSelectedLeads(formData: FormData) {
+  await deleteLeads(formData.getAll("ids").map(Number));
+}
+
 /* ---------- follow-ups ---------- */
 
 export async function addFollowUp(leadId: number, formData: FormData) {

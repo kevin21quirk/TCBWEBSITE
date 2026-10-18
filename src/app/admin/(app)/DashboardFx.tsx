@@ -14,7 +14,7 @@ import {
 /*  Scene: aurora blobs + grid floor that parallax against the pointer  */
 /* ------------------------------------------------------------------ */
 
-export function HoloBackdrop() {
+export function HoloBackdrop({ fixed = false }: { fixed?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function HoloBackdrop() {
     <div
       ref={ref}
       aria-hidden
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className={`pointer-events-none inset-0 overflow-hidden ${fixed ? "fixed" : "absolute"}`}
       style={{ "--px": "0px", "--py": "0px" } as CSSProperties}
     >
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#111a33_0%,_#070b16_55%,_#04060d_100%)]" />

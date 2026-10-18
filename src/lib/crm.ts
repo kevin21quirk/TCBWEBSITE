@@ -200,6 +200,91 @@ export const TEMPERATURE_STYLES = {
   cold: { label: "Cold", badge: "bg-sky-50 text-sky-700 ring-sky-200" },
 } as const;
 
+/* ---------- spam detection ---------- */
+
+/** Vendor-pitch vocabulary. Two or more hits = marketing pitch. */
+export const SPAM_PHRASES = [
+  /\bseo\b/i,
+  /\bbacklinks?\b/i,
+  /\bguest post/i,
+  /\brank(ing|ed)? (on|in) google/i,
+  /\bweb ?(site )?design/i,
+  /\b(crypto|bitcoin|forex|casino|viagra)\b/i,
+  /\bloan offer/i,
+  /\b(more|targeted|increase|boost|drive) (your )?(traffic|visitors|clicks|leads|sales)\b/i,
+  /\b(website|site) (visits|visitors|traffic)\b/i,
+  /\bdear (sir|madam|business owner|website owner)/i,
+  /\bclick here\b/i,
+  /\bunsubscribe\b/i,
+  /\badvertising platform\b/i,
+  /\b(we'?ve|we have) (developed|built|created)\b/i,
+  /\b(our|unique|new) (platform|service|solution|tool)\b/i,
+  /\b(show(ing)?|appear(ing)?) (up )?first\b/i,
+  /\bsearch(es|ing)? for your (product|service|business)/i,
+  /\b(your )?competitors?\b/i,
+  /\bcampaigns? (go|usually go|will be) live\b/i,
+  /\bin (less than|under) (24|48) hours\b/i,
+  /\bkeywords?\b/i,
+  /\btraffic estimates?\b/i,
+  /\bcan i show you\b/i,
+  /\bwould you like (me to|a) (give|send|show|free)/i,
+  /\bget started\b/i,
+  /\bno (extra )?cost\b/i,
+  /\bclose this out\b/i,
+  /\bfor your business\b/i,
+];
+const URL_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(ru|xyz|top|click|live|site|online|icu|buzz)\b)/i;
+/** Throwaway / relay domains that only ever send us junk. */
+export const SPAM_DOMAINS = [
+  "jmailservice.com",
+  "mailinator.com",
+  "guerrillamail.com",
+  "yopmail.com",
+  "temp-mail.org",
+  "10minutemail.com",
+  "sharklasers.com",
+  "trashmail.com",
+];
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Cheap rules for contact-form junk. Returns the reasons it tripped so the
+ * UI can explain the flag; empty array means it looks like a real person.
+ */
+export function spamSignals(
+  l: Pick<Lead, "name" | "email" | "message" | "phone" | "company" | "source">
+): string[] {
+  if (l.source !== "contact form") return [];
+  const r: string[] = [];
+  const msg = l.message ?? "";
+  const name = l.name.trim();
+  const domain = (l.email ?? "").split("@")[1]?.toLowerCase() ?? "";
+  if (SPAM_DOMAINS.includes(domain)) r.push("known spam domain");
+  if (URL_RE.test(msg) || URL_RE.test(name) || URL_RE.test(l.company ?? ""))
+    r.push("contains a link");
+  const pitchHits = SPAM_PHRASES.filter((re) => re.test(msg)).length;
+  if (pitchHits >= 2) r.push("marketing pitch");
+  // Bots that mail-merge the name into the body leave it glued to the
+  // next word ("Raymond AbbottWe've developed…").
+  if (
+    name.length > 3 &&
+    new RegExp(`(?<=[A-Za-z])${escapeRe(name)}|${escapeRe(name)}(?=[A-Za-z])`).test(msg)
+  )
+    r.push("name mail-merged into message");
+  if (/\d/.test(name) || !/[aeiouy]/i.test(name) || /^(.)\1{3,}/i.test(name))
+    r.push("unlikely name");
+  if (/^[a-z]{12,}$/i.test(name) && !/[aeiou]{1}[^aeiou]{1,3}[aeiou]/i.test(name))
+    r.push("random letters");
+  if (/[\u0400-\u04FF\u4E00-\u9FFF]/.test(msg + name)) r.push("non-Latin script");
+  if (l.email && /\.(ru|xyz|top|click|icu|buzz)$/i.test(l.email)) r.push("suspicious email domain");
+  if (/<\/?[a-z][^>]*>|\[url=|\[link\]/i.test(msg)) r.push("markup in message");
+  return r;
+}
+
+export const isLikelySpam = (l: Parameters<typeof spamSignals>[0]) =>
+  spamSignals(l).length > 0;
+
 /* ---------- LinkedIn research ---------- */
 
 export function linkedinSearches(l: Pick<Lead, "name" | "company" | "job_title" | "email">) {

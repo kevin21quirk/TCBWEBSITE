@@ -4,6 +4,7 @@ import DeleteLeadButton from "@/app/admin/(app)/leads/[id]/DeleteLeadButton";
 import EmailComposer from "@/app/admin/(app)/leads/[id]/EmailComposer";
 import LinkedInPlaybook from "@/app/admin/(app)/leads/[id]/LinkedInPlaybook";
 import SmartLinks from "@/app/admin/(app)/leads/[id]/SmartLinks";
+import { SpamBadge } from "@/app/admin/(app)/leads/SpamControls";
 import SequenceControls from "@/app/admin/(app)/outreach/SequenceControls";
 import {
   addFollowUp,
@@ -27,6 +28,7 @@ import {
   linkedinSearches,
   money,
   nextSteps,
+  spamSignals,
   scoreLead,
   type FollowUp,
   type Lead,
@@ -163,7 +165,10 @@ export default async function LeadDetailPage({
                   {lead.name.charAt(0).toUpperCase()}
                 </span>
                 <div>
-                  <h1 className="text-2xl font-bold text-ink">{lead.name}</h1>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-2xl font-bold text-ink">{lead.name}</h1>
+                    <SpamBadge reasons={spamSignals(lead)} />
+                  </div>
                   <p className="mt-0.5 text-sm text-slate-500">
                     {[lead.job_title, lead.company].filter(Boolean).join(" at ") ||
                       "No job title or company yet"}
