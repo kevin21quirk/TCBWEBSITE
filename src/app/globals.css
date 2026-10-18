@@ -482,7 +482,6 @@ body {
 
 /* Frosted panel: translucent fill, hairline edge, inner top highlight */
 .glass {
-  position: relative;
   isolation: isolate;
   background: linear-gradient(
     160deg,
@@ -496,6 +495,12 @@ body {
     0 20px 60px -20px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* Panes need a positioning context for the glare, but must not clobber
+   fixed/absolute/sticky placement (the sidebar is fixed). */
+.glass:where(:not(.fixed, .absolute, .sticky)) {
+  position: relative;
 }
 
 /* Pointer-tracked glare that slides across the pane. Sits at z -1 inside
