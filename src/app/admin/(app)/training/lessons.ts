@@ -166,7 +166,7 @@ export const LESSONS: Lesson[] = [
         caption: "To update a deal, drag its card into the next column — or use the dropdown on mobile. The status, the forecast and the timeline all update instantly.",
         spot: "board",
         click: true,
-        set: "dragged",
+        sets: [{ at: 0.15, v: "dragging" }, { at: 0.62, v: "dragged" }],
       },
       {
         chapter: "Overdue flags",

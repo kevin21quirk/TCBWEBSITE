@@ -25,6 +25,8 @@ export type Step = {
   type?: string;
   /** Variant string passed to the scene after the click lands. */
   set?: string;
+  /** Multi-phase variants: v applies once tIn/dur passes `at` (0–1). Overrides `set`. */
+  sets?: { at: number; v: string }[];
 };
 
 export type Lesson = {

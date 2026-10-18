@@ -46,7 +46,9 @@ export default function TrainingPlayer({
   const step = steps[idx];
   const tIn = Math.min(Math.max(t - start, 0), dur);
   const clickAt = Math.min(dur * 0.62, Math.max(0, dur - 1600));
-  const variant = tIn >= clickAt ? step.set ?? null : null;
+  const sets = step.sets ?? (step.set ? [{ at: 0.62, v: step.set }] : []);
+  const frac = tIn / dur;
+  const variant = sets.reduce<string | null>((v, s) => (frac >= s.at ? s.v : v), null);
   const chars = Math.min(step.caption.length, Math.floor((tIn / 1000) * SPEED));
 
   useEffect(() => {
@@ -125,8 +127,9 @@ export default function TrainingPlayer({
     Math.max(cxL - STAGE_W / (2 * camScale), -100),
     STAGE_W - STAGE_W / camScale + 100
   );
+  // Aim slightly above centre so the subtitle bar never covers the target.
   const camY = Math.min(
-    Math.max(cyL - SCENE_H / (2 * camScale), -(sceneH.current - SCENE_H / camScale)),
+    Math.max(cyL - (SCENE_H * 0.42) / camScale, -(sceneH.current - SCENE_H / camScale)),
     70
   );
 
@@ -143,6 +146,8 @@ export default function TrainingPlayer({
       ? `polygon(0% 0%,100% 0%,100% 100%,0% 100%,0% ${hy + OV}px,${hx + OV}px ${hy + OV}px,${hx + OV}px ${hy + hh + OV}px,${hx + hw + OV}px ${hy + hh + OV}px,${hx + hw + OV}px ${hy + OV}px,0% ${hy + OV}px)`
       : "polygon(0% 0%,100% 0%,100% 100%,0% 100%)"
     : undefined;
+  // Subtitles flip to the top when a large highlighted area reaches the bottom.
+  const captionTop = ready && hot ? SCENE_H * 0.42 + (hh * camScale) / 2 > SCENE_H * 0.7 : false;
   const ripple = step.click && tIn >= clickAt && tIn < clickAt + 800;
   const pressing = ripple;
   const clickCue = step.click && tIn >= clickAt - 1200 && tIn < clickAt + 300;
@@ -203,7 +208,7 @@ export default function TrainingPlayer({
               <>
                 <div
                   className="pointer-events-none absolute z-20"
-                  style={{ inset: -OV, clipPath: clip, background: "rgba(3,6,15,0.72)", transition: "clip-path 1.1s cubic-bezier(.3,.7,.25,1)" }}
+                  style={{ inset: -OV, clipPath: clip, background: "rgba(3,6,15,0.45)", transition: "clip-path 1.1s cubic-bezier(.3,.7,.25,1)" }}
                 />
                 {hot && (
                   <>
@@ -271,9 +276,16 @@ export default function TrainingPlayer({
             )}
           </div>
 
+          {/* light sweep between chapters */}
+          {ready && (
+            <div key={`sweep-${idx}`} className="pointer-events-none absolute inset-0 z-30 overflow-hidden">
+              <div className="animate-sweep-x absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+            </div>
+          )}
+
           {/* subtitle bar — video-style captions, outside the camera */}
           {ready && t < total && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex justify-center pb-4">
+            <div className={`pointer-events-none absolute inset-x-0 z-40 flex justify-center ${captionTop ? "top-0 pt-4" : "bottom-0 pb-4"}`}>
               <div className="mx-4 w-full max-w-4xl rounded-2xl bg-black/75 px-6 py-4 ring-1 ring-white/15 backdrop-blur-md">
                 <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-light">
                   {idx + 1} / {steps.length} · {step.chapter}

@@ -111,12 +111,12 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
   const selected = variant === "spam_selected";
   const deleted = variant === "spam_deleted" || variant === "open_lead";
   if (variant === "open_lead") return <LeadDetailScene typing={typing} />;
-  const rows = deleted ? LEADS.filter((l) => !l.spam) : LEADS;
+  const rows = LEADS;
   return (
     <AppFrame nav="/admin/leads">
       <div className="holo-theme space-y-3 p-5 text-white">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Leads <span className="text-sm font-normal text-white/40">({rows.length})</span></h1>
+          <h1 className="text-xl font-bold">Leads <span className="text-sm font-normal text-white/40">({rows.filter((l) => !(deleted && l.spam)).length})</span></h1>
           <div className="flex gap-2">
             <span className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">Export CSV</span>
             <span className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">Import</span>
@@ -154,10 +154,10 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
             </thead>
             <tbody className="divide-y divide-white/[0.06]">
               {rows.map((l) => (
-                <tr key={l.id} className={l.spam ? "bg-red-500/[0.07]" : ""}>
+                <tr key={l.id} className={l.spam && deleted ? "row-collapse" : l.spam ? "bg-red-500/[0.07]" : ""}>
                   <td className="pl-4 py-2.5 align-top">
                     <span className={`mt-0.5 inline-block h-3.5 w-3.5 rounded border ${selected && l.spam ? "border-red-400 bg-red-500" : "border-white/30 bg-white/10"}`}>
-                      {selected && l.spam && <svg viewBox="0 0 24 24" fill="white" className="h-3.5 w-3.5"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>}
+                      {selected && l.spam && <svg viewBox="0 0 24 24" fill="white" className="animate-pop-in h-3.5 w-3.5"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>}
                     </span>
                   </td>
                   <td className="px-2 py-2.5">
@@ -186,7 +186,7 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
         </Spot>
         {selected && (
           <div className="flex justify-center pt-1">
-            <Spot id="deletebar" className="glass flex items-center gap-4 rounded-full py-1.5 pl-4 pr-1.5">
+            <Spot id="deletebar" className="glass animate-pop-in flex items-center gap-4 rounded-full py-1.5 pl-4 pr-1.5">
               <p className="text-xs font-semibold">2 selected</p>
               <span className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-red-600 to-rose-500 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest shadow-[0_0_20px_-4px_rgba(239,68,68,0.9)]">
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
@@ -308,6 +308,7 @@ function LeadDetailScene({ typing }: { typing?: Typing }) {
 
 export function PipelineScene({ variant }: { variant: string | null }) {
   const dragged = variant === "dragged";
+  const dragging = variant === "dragging";
   const cols: { label: string; color: string; cards: { n: string; co: string; score: string; overdue?: boolean }[] }[] = [
     { label: "New", color: "#38bdf8", cards: [
       ...(dragged ? [] : [{ n: "Sarah Jones", co: "Meridian IT Contractors", score: "91" }]),
@@ -345,7 +346,7 @@ export function PipelineScene({ variant }: { variant: string | null }) {
         </Spot>
         <Spot id="board" className="flex gap-3">
           {cols.map((c) => (
-            <div key={c.label} className="flex min-h-[300px] flex-1 flex-col rounded-xl border border-white/10 bg-white/[0.04]">
+            <div key={c.label} className={`flex min-h-[300px] flex-1 flex-col rounded-xl border transition-colors duration-500 ${dragging && c.label === "Contacted" ? "border-brand/60 bg-brand/10" : "border-white/10 bg-white/[0.04]"}`}>
               <div className="border-b border-white/10 p-2.5">
                 <p className="flex items-center justify-between text-xs font-bold">
                   <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: c.color }} />{c.label}</span>
@@ -357,7 +358,7 @@ export function PipelineScene({ variant }: { variant: string | null }) {
                   <div
                     key={k.n}
                     data-spot={dragged && k.n === "Sarah Jones" ? "dropped" : undefined}
-                    className={`rounded-lg border p-2.5 ${dragged && k.n === "Sarah Jones" ? "animate-holo-in border-brand/50 bg-brand/10" : "border-white/10 bg-white/[0.07]"} ${k.overdue ? "border-red-400/40" : ""}`}
+                    className={`rounded-lg border p-2.5 ${dragged && k.n === "Sarah Jones" ? "animate-holo-in border-brand/50 bg-brand/10" : dragging && k.n === "Sarah Jones" ? "animate-drag-card relative z-20 border-brand/70 bg-brand/15 shadow-[0_16px_40px_-8px_rgba(220,38,38,0.6)]" : "border-white/10 bg-white/[0.07]"} ${k.overdue ? "border-red-400/40" : ""}`}
                   >
                     <div className="flex items-start justify-between">
                       <p className="text-[11px] font-semibold">{k.n}</p>
@@ -440,7 +441,7 @@ export function RadarScene({ variant, typing }: { variant: string | null; typing
                 </div>
               </div>
               {i === 0 && officers && (
-                <Spot id="officers" className="mt-2 rounded-xl border border-brand/25 bg-brand/[0.05] p-3">
+                <Spot id="officers" className="animate-holo-in mt-2 rounded-xl border border-brand/25 bg-brand/[0.05] p-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest">The people behind {r.n}</p>
                   {[["JAMES WHITTAKER", "Director · appointed 6 Oct 2026", added], ["SOPHIE LANG", "Director · appointed 6 Oct 2026", false]].map(([n, r2, a]) => (
                     <div key={n as string} className="mt-2 flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.07] px-2.5 py-2">
@@ -577,7 +578,7 @@ export function OutreachScene({ variant }: { variant: string | null }) {
                     ))}
                   </div>
                   {composed && (
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-[9px] leading-relaxed text-white/60">
+                    <div className="animate-pop-in rounded-xl border border-white/10 bg-white/5 p-2.5 text-[9px] leading-relaxed text-white/60">
                       Hi Sarah — just floating this back up in case it got buried. The comparison&apos;s free and takes about 10 minutes…
                     </div>
                   )}
@@ -674,7 +675,7 @@ export function CalendarScene({ variant }: { variant: string | null }) {
                             key={t}
                             data-spot={c === "red" ? "overduechip" : c === "brand" ? "todaychip" : undefined}
                             className={`truncate rounded px-1 py-0.5 text-[7px] font-semibold ${
-                              c === "red" ? "bg-red-500/20 text-red-300 ring-1 ring-red-400/40"
+                              c === "red" ? "animate-pulse bg-red-500/20 text-red-300 ring-1 ring-red-400/40"
                               : c === "brand" ? "bg-brand/15 text-brand-light ring-1 ring-brand/30"
                               : c === "green" ? "bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-400/40"
                               : "bg-sky-400/15 text-sky-300 ring-1 ring-sky-400/40"
