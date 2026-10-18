@@ -166,10 +166,16 @@ export default function TrainingPlayer({
   const typeChars = step.type
     ? Math.min(step.type.length, Math.max(0, Math.floor((tIn - 900) / 55)))
     : 0;
+  // Text typed in earlier chapters stays committed in its field — e.g. the
+  // scan keyword remains in the box while the results are being explained.
+  const commit: Record<string, string> = {};
+  for (let i = 0; i < idx; i++) if (steps[i].type && steps[i].spot) commit[steps[i].spot!] = steps[i].type!;
   const typing =
     step.type && step.spot && !stepPhase
-      ? { spot: step.spot, text: step.type, chars: typeChars }
-      : null;
+      ? { spot: step.spot, text: step.type, chars: typeChars, commit }
+      : Object.keys(commit).length
+        ? { spot: "", text: "", chars: 0, commit }
+        : null;
 
   // While the click lands, depress the actual target element — the button
   // visibly presses under the cursor, not just the cursor itself.

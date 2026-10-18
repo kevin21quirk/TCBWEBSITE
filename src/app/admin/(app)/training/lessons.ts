@@ -31,6 +31,11 @@ export const LESSONS: Lesson[] = [
         spot: "chart",
       },
       {
+        chapter: "Charts & signals",
+        caption: "Four more lenses on the operation — the pipeline mix by stage, the win-rate gauge, a 14-day activity rhythm, and which sources are actually feeding the funnel.",
+        spot: "widgets",
+      },
+      {
         chapter: "Copilot",
         caption: "Copilot watches for overdue follow-ups, hot leads with no next step, and research gaps, then links you straight to the fix. Spam arriving through the website form is flagged here too.",
         spot: "copilot",
@@ -50,8 +55,8 @@ export const LESSONS: Lesson[] = [
   {
     id: "leads",
     nav: "/admin/leads",
-    title: "Leads — filtering & removing spam",
-    blurb: "The master list of every enquiry. Search, filter, spot the score, bulk-select and clear out spam in seconds.",
+    title: "Leads — the master list, spam, add & import",
+    blurb: "Every enquiry in one table — search, filter, clean out spam, export, add leads by hand and bulk-import CSVs.",
     liveHref: "/admin/leads",
     scene: LeadsScene,
     steps: [
@@ -63,8 +68,13 @@ export const LESSONS: Lesson[] = [
       },
       {
         chapter: "Table",
-        caption: "Every row shows the lead score — hot, warm or cold — plus contact details, stage, deal value and owner, so you can triage a whole page in seconds.",
+        caption: "Every row shows the lead score — hot, warm or cold — plus contact details, stage, deal value and owner. The blue in badge means a LinkedIn profile is saved.",
         spot: "table",
+      },
+      {
+        chapter: "Toolbar actions",
+        caption: "Top right, three tools: Export CSV downloads the list you're looking at, Import bulk-loads a spreadsheet, and + Add Lead is manual entry. We'll use all three.",
+        spot: "actions",
       },
       {
         chapter: "Likely spam filter",
@@ -88,9 +98,74 @@ export const LESSONS: Lesson[] = [
         set: "spam_deleted",
       },
       {
-        chapter: "Done",
+        chapter: "Spam gone",
         caption: "Gone — the pipeline counts update instantly, and the Copilot spam warning on the dashboard clears itself. Genuine leads are never touched by the bulk tools.",
         dur: 6000,
+      },
+      {
+        chapter: "Single-row delete",
+        caption: "Back on the full list — every row also has a trash icon for one-off deletes. Hover, click, confirm, and it's gone.",
+        spot: "rowtrash",
+        click: true,
+        sets: [{ at: 0, v: null }, { at: 0.68, v: "row_deleted" }],
+      },
+      {
+        chapter: "Export CSV",
+        caption: "Export CSV downloads exactly what you're filtered to — stage, source or search — straight into Excel for reporting or mail merges.",
+        spot: "exportbtn",
+        click: true,
+      },
+      {
+        chapter: "Add Lead",
+        caption: "+ Add Lead opens the manual form — for phone enquiries, referrals, event contacts, anyone who didn't come through the website.",
+        spot: "addbtn",
+        click: true,
+        set: "new_lead",
+      },
+      {
+        chapter: "Fill it in",
+        caption: "Only the name is required — but company, contact details, job title, value and a LinkedIn URL all feed the score and the pipeline.",
+        spot: "nl_name",
+        type: "Mo Khan",
+      },
+      {
+        chapter: "Create the lead",
+        caption: "Create Lead saves it and drops you back at the list — the new row lands at the top, scored, assigned to you, ready to work.",
+        spot: "nl_create",
+        click: true,
+        set: "created",
+      },
+      {
+        chapter: "Import",
+        caption: "Import is for bulk lists — a LinkedIn Sales Navigator export, your connections CSV, or any event spreadsheet.",
+        spot: "importbtn",
+        click: true,
+        set: "import",
+      },
+      {
+        chapter: "Pick the file",
+        caption: "Choose a CSV and it previews every row before anything is saved — it matches columns automatically, including Sales Navigator's own headers.",
+        spot: "dropzone",
+        click: true,
+        set: "import_ready",
+      },
+      {
+        chapter: "Tag the batch",
+        caption: "The preview shows exactly what will be created. Tag the batch — sales-nav-oct, expo-2025 — so you can filter this exact import later.",
+        spot: "imptag",
+        type: "sales-nav-oct",
+      },
+      {
+        chapter: "Run the import",
+        caption: "One click — three leads created, and the duplicate it already knows is skipped automatically. Each gets a first-outreach follow-up for tomorrow.",
+        spot: "importgo",
+        click: true,
+        set: "import_done",
+      },
+      {
+        chapter: "Back in the list",
+        caption: "And there they are in the master list — tagged, assigned to you, with follow-ups already booked. Imported leads behave exactly like any other.",
+        sets: [{ at: 0.3, v: "restored" }],
       },
     ],
   },
@@ -104,8 +179,10 @@ export const LESSONS: Lesson[] = [
     steps: [
       {
         chapter: "Opening a lead",
-        caption: "Now let's open a lead profile — the page where the actual selling happens. Everything about this person lives here.",
-        sets: [{ at: 0.25, v: "open_lead" }],
+        caption: "Now let's open a lead profile — click any name in the list and you're on the page where the actual selling happens.",
+        spot: "rowlink",
+        click: true,
+        sets: [{ at: 0.68, v: "open_lead" }],
       },
       {
         chapter: "Score & next steps",
@@ -117,6 +194,12 @@ export const LESSONS: Lesson[] = [
         chapter: "Stage & owner",
         caption: "The stage pills move the lead along the pipeline and the owner dropdown assigns it to a teammate — every change is stamped on the timeline automatically.",
         spot: "status",
+      },
+      {
+        chapter: "LinkedIn research",
+        caption: "The LinkedIn box keeps their profile one click away — or paste one in here once you've found it. The prospecting queue tracks who still needs researching.",
+        spot: "linbox",
+        scroll: true,
       },
       {
         chapter: "Log an activity",
@@ -135,8 +218,24 @@ export const LESSONS: Lesson[] = [
       },
       {
         chapter: "Follow-ups",
-        caption: "Schedule a follow-up and it lands on the calendar and the dashboard focus queue — overdue items turn red everywhere until you tick them done.",
+        caption: "The follow-up list is this lead's commitments — what's booked, what was done. Nothing here slips: overdue items turn red across the whole CRM.",
         spot: "followups",
+        scroll: true,
+      },
+      {
+        chapter: "Book a follow-up",
+        caption: "Booking one is two fields — what you're doing and when. Give it a clear title and pick the date.",
+        spot: "fu_title",
+        type: "Chase the comparison",
+        scroll: true,
+      },
+      {
+        chapter: "Book it",
+        caption: "Book follow-up and it lands on the calendar, the dashboard focus queue and this list — a red flag everywhere if it ever goes overdue.",
+        spot: "fu_book",
+        click: true,
+        set: "fu_added",
+        scroll: true,
       },
       {
         chapter: "Email sequence",
@@ -169,9 +268,16 @@ export const LESSONS: Lesson[] = [
         spot: "stats",
       },
       {
+        chapter: "Card anatomy",
+        caption: "Each card carries the score badge, deal value, owner avatar and a blue in dot when a LinkedIn profile is saved — everything you need to decide what to touch first.",
+        spot: "board",
+      },
+      {
         chapter: "My leads",
-        caption: "Use All leads and My leads to switch between the whole team's board and just the deals assigned to you — handy during a busy week.",
+        caption: "All leads and My leads switch between the whole team's board and just your deals — click it and everyone else's cards fade back.",
         spot: "filter",
+        click: true,
+        set: "mine",
       },
       {
         chapter: "Drag a card",
@@ -283,14 +389,27 @@ export const LESSONS: Lesson[] = [
         set: "researched",
       },
       {
-        chapter: "Coverage",
-        caption: "Recently researched shows the team's progress, and the coverage percentage at the top tracks how much of your pipeline is LinkedIn-ready.",
+        chapter: "Coverage stats",
+        caption: "The stat band tracks the queue — how many await research, how many profiles are saved, and the coverage bar showing what share of the pipeline is LinkedIn-ready.",
+        spot: "pstats",
+      },
+      {
+        chapter: "Recently researched",
+        caption: "The recent list is the team's progress log — who researched whom, and a one-click jump back out to that profile on LinkedIn.",
         spot: "recent",
+      },
+      {
+        chapter: "Import Sales Navigator",
+        caption: "Got a Sales Navigator lead list? This jumps to the CSV importer — the same one from the Leads lesson — and the new prospects queue up here for research.",
+        spot: "importsn",
+        click: true,
+        set: "import",
       },
       {
         chapter: "Playbook",
         caption: "The playbook gives you the full sequence: save the profile, send a personalised connect, log it, then use the ready-written follow-up template.",
         spot: "playbook",
+        sets: [{ at: 0, v: null }],
       },
     ],
   },
@@ -307,16 +426,38 @@ export const LESSONS: Lesson[] = [
         caption: "Outreach is your email engine — every campaign, automated sequence, open and click runs from hello@thecontractorbroker.com.",
       },
       {
-        chapter: "Composer",
-        caption: "Start a campaign: pick recipients, choose a template, and every lead gets their own personalised email — never a bulk mail-merge blast.",
-        spot: "composer",
+        chapter: "The numbers",
+        caption: "The stat band is the report card — emails sent, open rate, opens this week, and how many sequences are chasing leads right now.",
+        spot: "ostats",
+      },
+      {
+        chapter: "Audience",
+        caption: "Every campaign starts with the audience picker — filter by stage, search, or Select all shown. The badge keeps count of who's in.",
+        spot: "audience",
+      },
+      {
+        chapter: "Templates",
+        caption: "Pick a ready template — the ◆ branded ones send the full designed email — or go Custom and write your own from scratch.",
+        spot: "templates",
+      },
+      {
+        chapter: "Message & merge tags",
+        caption: "Name the campaign, write subject and body — merge tags like {firstName} and {companyClause} personalise every single email automatically. Attach files if you need them.",
+        spot: "msgform",
+      },
+      {
+        chapter: "Preview & test",
+        caption: "Preview renders the exact email a lead receives — shown as a named example — and Send me a test fires one to your own inbox before the real send.",
+        spot: "previewrow",
         click: true,
         set: "composed",
       },
       {
-        chapter: "Personalisation",
-        caption: "The preview shows exactly what each person receives — their name, their company, written by the template. Hit send and it's tracked automatically.",
-        spot: "composer",
+        chapter: "Send",
+        caption: "One click sends each lead their own personalised copy — never a mail-merge blast — and the campaign lands in Past campaigns instantly.",
+        spot: "sendbtn",
+        click: true,
+        set: "sent",
       },
       {
         chapter: "Results",
@@ -359,7 +500,7 @@ export const LESSONS: Lesson[] = [
       },
       {
         chapter: "Colour code",
-        caption: "Red chips are overdue, the ringed one is due today, blue is upcoming, and green dots are new leads arriving. Hover any chip to see the lead.",
+        caption: "The legend under the grid spells it out — green dots are new leads arriving, blue chips are follow-ups due, red ones are overdue, and the ringed chip is today.",
         spot: "overduechip",
         scroll: true,
       },
@@ -377,8 +518,8 @@ export const LESSONS: Lesson[] = [
       },
       {
         chapter: "Coming up",
-        caption: "Next 14 days previews what's ahead, and the month arrows let you jump backwards or forwards to review or plan.",
-        spot: "nav",
+        caption: "Next 14 days previews everything ahead so you can plan the week, and the arrows up top jump the month backwards or forwards.",
+        spot: "upcoming",
       },
     ],
   },
@@ -461,8 +602,15 @@ export const LESSONS: Lesson[] = [
       },
       {
         chapter: "Team list",
-        caption: "The team table lists every CRM user with their role and status — disable a leaver's account instantly without deleting their activity history.",
+        caption: "The team table lists every CRM user with their role and status — super admins get the red badge, staff the plain one.",
         spot: "teamtable",
+      },
+      {
+        chapter: "Disable a user",
+        caption: "Disable flips a leaver's account off instantly — they can't log in, but every lead and logged activity stays in their name. Enable brings them straight back.",
+        spot: "disablebtn",
+        click: true,
+        set: "user_off",
       },
       {
         chapter: "Add employee",

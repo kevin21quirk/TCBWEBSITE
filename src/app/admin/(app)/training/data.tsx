@@ -4,7 +4,13 @@ import type { ComponentType, ReactNode } from "react";
 /*  Lesson model                                                       */
 /* ------------------------------------------------------------------ */
 
-export type Typing = { spot: string; text: string; chars: number } | null;
+export type Typing = {
+  spot: string;
+  text: string;
+  chars: number;
+  /** Text committed by earlier `type` steps — stays visible in each field. */
+  commit?: Record<string, string>;
+} | null;
 
 export type Scene = ComponentType<{ variant: string | null; typing?: Typing }>;
 
@@ -208,6 +214,7 @@ export function Field({
   className?: string;
 }) {
   const active = typing && typing.spot === id && typing.chars > 0;
+  const committed = !active && typing?.commit?.[id];
   return (
     <span data-spot={id} className={className}>
       {active ? (
@@ -215,8 +222,8 @@ export function Field({
           {typing.text.slice(0, typing.chars)}
           <span className="ml-px inline-block h-3 w-[2px] animate-pulse bg-white/80 align-middle" />
         </span>
-      ) : value ? (
-        <span className="text-white">{value}</span>
+      ) : committed || value ? (
+        <span className="text-white">{committed || value}</span>
       ) : (
         placeholder
       )}

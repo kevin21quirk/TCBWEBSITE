@@ -1,6 +1,6 @@
 "use client";
 
-import { AreaChart, Bars, RankBars } from "../DashboardCharts";
+import { AreaChart, Bars, Donut, Gauge, RankBars } from "../DashboardCharts";
 import { AppFrame, Field, Spot, SpotInline, pTitle, type Typing } from "./data";
 
 const glass = "glass rounded-2xl";
@@ -62,6 +62,29 @@ export function DashboardScene({ variant }: { variant: string | null }) {
             </ul>
           </Spot>
         </div>
+        <Spot id="widgets" className="grid grid-cols-4 gap-4">
+          <div className={`${glass} flex items-center gap-3 p-4`}>
+            <Donut size={86} thickness={10} segments={[{ value: 4, color: "#38bdf8", label: "New" }, { value: 2, color: "#fbbf24", label: "Contacted" }, { value: 2, color: "#a78bfa", label: "Qualified" }, { value: 1, color: "#34d399", label: "Won" }]}>
+              <p className="text-sm font-extrabold">9</p>
+            </Donut>
+            <div>
+              <p className={pTitle}>Pipeline mix</p>
+              <p className="mt-1 text-[9px] leading-relaxed text-white/50">Where every open deal sits right now.</p>
+            </div>
+          </div>
+          <div className={`${glass} p-4`}>
+            <p className={pTitle}>Win rate · all time</p>
+            <div className="mt-1"><Gauge value={33} size={120} label="deals won" /></div>
+          </div>
+          <div className={`${glass} p-4`}>
+            <p className={pTitle}>Activity rhythm · 14 days</p>
+            <div className="mt-2"><Bars values={[2, 3, 1, 4, 2, 5, 3, 4, 6, 3, 5, 2, 4, 3]} labels={Array(14).fill("")} height={72} /></div>
+          </div>
+          <div className={`${glass} p-4`}>
+            <p className={pTitle}>Lead sources</p>
+            <div className="mt-1"><RankBars rows={[{ label: "contact form", value: 12, sub: "4 won" }, { label: "linkedin", value: 7, sub: "2 won" }, { label: "referral", value: 5 }]} /></div>
+          </div>
+        </Spot>
         <div className="grid grid-cols-5 gap-4">
           <Spot id="focus" className={`${glass} col-span-2 p-4`}>
             <p className={pTitle}>Today&apos;s focus queue</p>
@@ -100,31 +123,44 @@ export function DashboardScene({ variant }: { variant: string | null }) {
 /* ============================== LEADS ============================== */
 
 const LEADS = [
-  { id: 1, name: "Sarah Jones", co: "Meridian IT Contractors", title: "Director", email: "sarah@meridian-it.co.uk", phone: "07700 900123", status: "New", score: "Hot 91", spam: false, val: "£4,800", owner: "KQ" },
-  { id: 2, name: "Tom Reeves", co: "Northgate Utilities", title: "Ops Manager", email: "tom@northgate.co.uk", phone: "07700 900456", status: "Qualified", score: "Hot 84", spam: false, val: "£6,100", owner: "JR" },
-  { id: 3, name: "Raymond Abbott", co: "", title: "", email: "ra@jmailservice.com", phone: "07700 900999", status: "New", score: "Cold 22", spam: true, val: "—", owner: "—" },
-  { id: 4, name: "Priya Shah", co: "Bright Contracts Ltd", title: "Contractor", email: "priya@bright.co.uk", phone: "", status: "Contacted", score: "Warm 62", spam: false, val: "£2,500", owner: "KQ" },
-  { id: 5, name: "David Turner", co: "", title: "", email: "dt@jmailservice.com", phone: "07700 900888", status: "New", score: "Cold 19", spam: true, val: "—", owner: "—" },
+  { id: 1, name: "Sarah Jones", co: "Meridian IT Contractors", title: "Director", email: "sarah@meridian-it.co.uk", phone: "07700 900123", status: "New", score: "Hot 91", spam: false, val: "£4,800", owner: "KQ", imp: false },
+  { id: 2, name: "Tom Reeves", co: "Northgate Utilities", title: "Ops Manager", email: "tom@northgate.co.uk", phone: "07700 900456", status: "Qualified", score: "Hot 84", spam: false, val: "£6,100", owner: "JR", imp: false },
+  { id: 3, name: "Raymond Abbott", co: "", title: "", email: "ra@jmailservice.com", phone: "07700 900999", status: "New", score: "Cold 22", spam: true, val: "—", owner: "—", imp: false },
+  { id: 4, name: "Priya Shah", co: "Bright Contracts Ltd", title: "Contractor", email: "priya@bright.co.uk", phone: "", status: "Contacted", score: "Warm 62", spam: false, val: "£2,500", owner: "KQ", imp: false },
+  { id: 5, name: "David Turner", co: "", title: "", email: "dt@jmailservice.com", phone: "07700 900888", status: "New", score: "Cold 19", spam: true, val: "—", owner: "—", imp: false },
 ];
 
 export function LeadsScene({ variant, typing }: { variant: string | null; typing?: Typing }) {
   const spamView = variant === "spam_filtered" || variant === "spam_selected";
   const selected = variant === "spam_selected";
   const deleted = variant === "spam_deleted";
-  if (variant === "open_lead" || variant === "logged")
+  const rowGone = variant === "row_deleted";
+  const created = variant === "created" || variant === "restored";
+  const restored = variant === "restored";
+  if (variant === "new_lead") return <NewLeadScene typing={typing} />;
+  if (variant === "import" || variant === "import_ready" || variant === "import_done")
+    return <ImportScene variant={variant} typing={typing} nav="/admin/leads" />;
+  if (variant === "open_lead" || variant === "logged" || variant === "fu_added")
     return <LeadDetailScene variant={variant} typing={typing} />;
-  const rows = LEADS;
-  const count = rows.filter((l) => !(deleted && l.spam) && !(spamView && !l.spam)).length;
+  const rows = [
+    ...(restored ? [
+      { id: 91, name: "Chloe Wu", co: "Orbit Facilities", title: "Director", email: "chloe@orbitfac.co.uk", phone: "", status: "New", score: "New 40", spam: false, val: "—", owner: "KQ", imp: true },
+      { id: 92, name: "Ben Marsh", co: "Marsh Consulting", title: "Contractor", email: "ben@marshconsult.co.uk", phone: "", status: "New", score: "New 38", spam: false, val: "—", owner: "KQ", imp: true },
+    ] : []),
+    ...(created ? [{ id: 90, name: "Mo Khan", co: "CityBuild Ltd", title: "", email: "mo@citybuild.co.uk", phone: "07700 900777", status: "New", score: "New 44", spam: false, val: "£5,000", owner: "KQ", imp: false }] : []),
+    ...LEADS,
+  ];
+  const count = rows.filter((l) => !(deleted && l.spam) && !(spamView && !l.spam) && !(rowGone && l.id === 5)).length;
   return (
     <AppFrame nav="/admin/leads">
       <div className="holo-theme space-y-3 p-5 text-white">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold">Leads <span className="text-sm font-normal text-white/40">({count})</span></h1>
-          <div className="flex gap-2">
-            <span className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">Export CSV</span>
-            <span className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">Import</span>
-            <span className="rounded-full bg-gradient-to-r from-brand to-brand-light px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest">+ Add Lead</span>
-          </div>
+          <Spot id="actions" className="flex gap-2">
+            <span data-spot="exportbtn" className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">Export CSV</span>
+            <span data-spot="importbtn" className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/60">Import</span>
+            <span data-spot="addbtn" className="rounded-full bg-gradient-to-r from-brand to-brand-light px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest">+ Add Lead</span>
+          </Spot>
         </div>
         <Spot id="filters" className={`${glass} space-y-2 p-3`}>
           <div className="flex gap-2">
@@ -156,8 +192,10 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.06]">
-              {rows.map((l) => (
-                <tr key={l.id} className={(l.spam && deleted) || (!l.spam && spamView) ? "row-collapse" : l.spam ? "bg-red-500/[0.07]" : ""}>
+              {rows.map((l) => {
+                const fresh = (restored && l.imp) || (created && l.id === 90);
+                return (
+                <tr key={l.id} className={`${(l.spam && deleted) || (!l.spam && spamView) || (rowGone && l.id === 5) ? "row-collapse" : l.spam ? "bg-red-500/[0.07]" : ""} ${fresh ? "animate-holo-in bg-emerald-400/[0.05]" : ""}`}>
                   <td className="pl-4 py-2.5 align-top">
                     <span className={`mt-0.5 inline-block h-3.5 w-3.5 rounded border ${selected && l.spam ? "border-red-400 bg-red-500" : "border-white/30 bg-white/10"}`}>
                       {selected && l.spam && <svg viewBox="0 0 24 24" fill="white" className="animate-pop-in h-3.5 w-3.5"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>}
@@ -165,9 +203,15 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
                   </td>
                   <td className="px-2 py-2.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">{l.name}</span>
+                      <span data-spot={l.id === 1 ? "rowlink" : undefined} className="font-semibold">{l.name}</span>
+                      {!l.spam && !l.imp && l.id <= 2 && (
+                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-sm bg-[#0a66c2] text-[7px] font-bold">in</span>
+                      )}
                       {l.spam && (
                         <span className="rounded-full bg-red-500/15 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-red-300 ring-1 ring-red-400/40">Spam?</span>
+                      )}
+                      {l.imp && (
+                        <span className="rounded-full bg-emerald-400/15 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-400/40">linkedin import</span>
                       )}
                     </div>
                     <p className="text-[10px] text-white/40">{[l.title, l.co].filter(Boolean).join(" · ") || "contact form"}</p>
@@ -178,12 +222,13 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
                   <td className="px-3 font-semibold">{l.val}</td>
                   <td className="px-3 text-white/60">{l.owner}</td>
                   <td className="pr-3 text-right">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg text-white/35">
+                    <span data-spot={l.id === 5 ? "rowtrash" : undefined} className="inline-flex h-6 w-6 items-center justify-center rounded-lg text-white/35">
                       <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
                     </span>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </Spot>
@@ -206,7 +251,8 @@ export function LeadsScene({ variant, typing }: { variant: string | null; typing
 /* ------------------------- lead detail mini ------------------------ */
 
 function LeadDetailScene({ variant, typing }: { variant?: string | null; typing?: Typing }) {
-  const logged = variant === "logged";
+  const logged = variant === "logged" || variant === "fu_added";
+  const fuAdded = variant === "fu_added";
   const chip = "rounded-xl border border-white/15 px-3 py-2 text-[10px] font-semibold text-white/70";
   return (
     <AppFrame nav="/admin/leads">
@@ -292,6 +338,17 @@ function LeadDetailScene({ variant, typing }: { variant?: string | null; typing?
               ))}
             </ol>
           </Spot>
+          <Spot id="linbox" className={`${glass} p-4`}>
+            <p className={pTitle}>LinkedIn</p>
+            <p className="mt-1 flex items-center gap-1.5 text-[10px] text-white/55">
+              <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-[#0a66c2] text-[8px] font-bold">in</span>
+              linkedin.com/in/sarahjones-meridian ↗
+            </p>
+            <div className="mt-2 flex gap-1.5">
+              <span className="flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-[10px] text-white/35">Paste profile URL to update</span>
+              <span className="rounded-lg bg-[#0a66c2]/80 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-wider">Save</span>
+            </div>
+          </Spot>
           <Spot id="sequence" className={`${glass} p-4`}>
             <p className={pTitle}>Automated follow-up</p>
             <p className="mt-1 text-[10px] leading-relaxed text-white/55">3-step email sequence — intro now, then automatic chases until they convert.</p>
@@ -304,12 +361,117 @@ function LeadDetailScene({ variant, typing }: { variant?: string | null; typing?
           </Spot>
           <Spot id="followups" className={`${glass} p-4`}>
             <p className={pTitle}>Follow-ups</p>
+            {fuAdded && (
+              <div className="animate-pop-in mt-2 flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.07] p-2 text-xs">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full border border-white/30 text-transparent">✓</span>
+                <div className="flex-1">
+                  <p className="font-semibold">Chase the comparison</p>
+                  <p className="text-[9px] text-white/45">Due Friday, 10:00 · Kevin</p>
+                </div>
+              </div>
+            )}
             <div className="mt-2 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2 text-xs">
               <span className="flex h-4 w-4 items-center justify-center rounded-full border border-white/30 text-transparent">✓</span>
               <div className="flex-1">
                 <p className="font-semibold">Chase comparison decision</p>
                 <p className="text-[9px] text-white/45">Due tomorrow, 9:00</p>
               </div>
+            </div>
+            <div className="mt-2 space-y-1.5 rounded-xl border border-dashed border-white/15 p-2">
+              <div className="flex gap-1.5">
+                <Field id="fu_title" placeholder="Task title…" typing={typing} className="flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-[9px] text-white/40" />
+                <span className="w-20 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-[9px] text-white/40">Fri 10:00</span>
+              </div>
+              <span data-spot="fu_book" className="block rounded-lg bg-white/15 py-1 text-center text-[9px] font-semibold uppercase tracking-widest">Book follow-up</span>
+            </div>
+          </Spot>
+        </div>
+      </div>
+    </AppFrame>
+  );
+}
+
+/* --------------------------- add lead form -------------------------- */
+
+function NewLeadScene({ typing }: { typing?: Typing }) {
+  const fld = "w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[10px] text-white/40";
+  return (
+    <AppFrame nav="/admin/leads">
+      <div className="holo-theme space-y-4 p-5 text-white">
+        <div>
+          <h1 className="text-xl font-bold">Add Lead</h1>
+          <p className="mt-0.5 text-[10px] text-white/50">Manually record a lead — phone enquiry, referral, event contact…</p>
+        </div>
+        <Spot id="nl_form" className={`${glass} mx-auto max-w-xl space-y-3 p-5`}>
+          <div className="grid grid-cols-2 gap-3">
+            <Field id="nl_name" placeholder="Full name *" typing={typing} className={fld} />
+            <span className={fld}>Company</span>
+            <span className={fld}>Email</span>
+            <span className={fld}>Phone</span>
+            <span className={fld}>Job title</span>
+            <span className={fld}>Estimated value (£)</span>
+          </div>
+          <span className={`block ${fld}`}>LinkedIn profile URL (https://www.linkedin.com/in/…)</span>
+          <span className={`block ${fld}`}>Manual entry ▾</span>
+          <span className={`block ${fld} h-16`}>Notes about this lead…</span>
+          <span data-spot="nl_create" className="block rounded-lg bg-gradient-to-r from-brand to-brand-light py-2.5 text-center text-[11px] font-semibold uppercase tracking-widest shadow-lg shadow-brand/30">Create Lead</span>
+        </Spot>
+      </div>
+    </AppFrame>
+  );
+}
+
+/* ----------------------------- CSV import --------------------------- */
+
+export function ImportScene({ variant, typing, nav }: { variant: string | null; typing?: Typing; nav: string }) {
+  const ready = variant === "import_ready" || variant === "import_done";
+  const done = variant === "import_done";
+  return (
+    <AppFrame nav={nav}>
+      <div className="holo-theme space-y-4 p-5 text-white">
+        <div>
+          <h1 className="text-xl font-bold">Import Leads</h1>
+          <p className="mt-0.5 text-[10px] text-white/50">Bring in prospects from LinkedIn Sales Navigator or any spreadsheet.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className={`${glass} col-span-2 space-y-3 p-4`}>
+            <Spot id="dropzone" className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-6 text-center transition-colors ${ready ? "border-emerald-400/50 bg-emerald-400/[0.06]" : "border-white/20"}`}>
+              <span className="text-2xl">{ready ? "✓" : "⇪"}</span>
+              <p className="mt-1.5 text-xs font-semibold">{ready ? "sales-nav-oct.csv" : "Choose a CSV file"}</p>
+              <p className="mt-0.5 text-[9px] text-white/45">Sales Navigator lead list, LinkedIn connections export or any CSV</p>
+            </Spot>
+            {ready && !done && (
+              <div className="animate-holo-in space-y-3">
+                <p className="rounded-lg bg-white/5 px-3 py-2 text-[10px]"><span className="font-bold">3</span> leads found. Matched columns: Name, Title, Company, Email, LinkedIn</p>
+                <div className="overflow-hidden rounded-lg border border-white/10">
+                  <table className="w-full text-[9px]">
+                    <thead><tr className="bg-white/5 text-left text-[8px] uppercase tracking-widest text-white/45">{["Name", "Title", "Company", "Email", "LinkedIn"].map((h) => <th key={h} className="px-2.5 py-1.5">{h}</th>)}</tr></thead>
+                    <tbody>
+                      {[["Chloe Wu", "Director", "Orbit Facilities", "chloe@orbitfac.co.uk", "✓"], ["Ben Marsh", "Contractor", "Marsh Consulting", "ben@marshconsult.co.uk", "✓"], ["Dan Ellis", "MD", "Ellis Build", "dan@ellisbuild.co.uk", "—"]].map((r) => (
+                        <tr key={r[0]} className="border-t border-white/[0.06]">{r.map((c, i) => <td key={i} className={`px-2.5 py-1.5 ${i === 0 ? "font-semibold" : "text-white/55"}`}>{c}</td>)}</tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Field id="imptag" placeholder="Tag these leads (optional, e.g. sales-nav-oct)" typing={typing} className="block w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[10px] text-white/40" />
+                <span data-spot="importgo" className="block rounded-lg bg-gradient-to-r from-brand to-brand-light py-2.5 text-center text-[11px] font-semibold uppercase tracking-widest shadow-lg shadow-brand/30">Import 3 leads</span>
+              </div>
+            )}
+            {done && (
+              <div className="animate-pop-in rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-3.5 text-[11px]">
+                <p className="font-semibold text-emerald-300">✓ Imported 3 leads.</p>
+                <p className="mt-1 text-emerald-200/70">Skipped 1 duplicate (matching email or LinkedIn URL).</p>
+                <p className="mt-1 text-emerald-200/70">Each imported lead is assigned to you with a “First outreach” follow-up for tomorrow.</p>
+                <p className="mt-2 flex gap-4 font-semibold text-emerald-300"><span className="underline">View imported leads</span><span className="underline">Prospecting queue</span></p>
+              </div>
+            )}
+          </div>
+          <Spot id="csvguide" className={`${glass} h-fit p-4`}>
+            <p className={pTitle}>Getting a CSV from LinkedIn</p>
+            <div className="mt-2 space-y-2 text-[9px] leading-relaxed text-white/55">
+              <p><span className="font-semibold text-white">Sales Navigator:</span> LinkedIn doesn&apos;t export lists directly — use a Chrome extension or paste results into a sheet.</p>
+              <p><span className="font-semibold text-white">Your connections:</span> LinkedIn → Settings → Data privacy → Get a copy of your data → Connections.csv</p>
+              <p className="rounded-lg bg-white/5 p-2 font-mono text-[8px] text-white/45">Name, Email, Phone, Company, Title, LinkedIn/Profile URL.</p>
             </div>
           </Spot>
         </div>
@@ -323,17 +485,19 @@ function LeadDetailScene({ variant, typing }: { variant?: string | null; typing?
 export function PipelineScene({ variant }: { variant: string | null }) {
   const dragged = variant === "dragged";
   const dragging = variant === "dragging";
-  const cols: { label: string; color: string; cards: { n: string; co: string; score: string; overdue?: boolean }[] }[] = [
+  const mine = variant === "mine" || dragging || dragged;
+  const sarah = { n: "Sarah Jones", co: "Meridian IT Contractors", score: "91", owner: "K", in: true };
+  const cols: { label: string; color: string; cards: { n: string; co: string; score: string; owner: string; in?: boolean; overdue?: boolean }[] }[] = [
     { label: "New", color: "#38bdf8", cards: [
-      ...(dragged ? [] : [{ n: "Sarah Jones", co: "Meridian IT Contractors", score: "91" }]),
-      { n: "Emma Clarke", co: "Bright Contracts", score: "58" },
+      ...(dragged ? [] : [sarah]),
+      { n: "Emma Clarke", co: "Bright Contracts", score: "58", owner: "J" },
     ]},
     { label: "Contacted", color: "#fbbf24", cards: [
-      ...(dragged ? [{ n: "Sarah Jones", co: "Meridian IT Contractors", score: "91" }] : []),
-      { n: "Priya Shah", co: "Bright Contracts", score: "62" },
+      ...(dragged ? [sarah] : []),
+      { n: "Priya Shah", co: "Bright Contracts", score: "62", owner: "K", in: true },
     ]},
-    { label: "Qualified", color: "#a78bfa", cards: [{ n: "Tom Reeves", co: "Northgate Utilities", score: "84", overdue: true }]},
-    { label: "Won", color: "#34d399", cards: [{ n: "Mo Khan", co: "CityBuild Ltd", score: "100" }]},
+    { label: "Qualified", color: "#a78bfa", cards: [{ n: "Tom Reeves", co: "Northgate Utilities", score: "84", owner: "J", in: true, overdue: true }]},
+    { label: "Won", color: "#34d399", cards: [{ n: "Mo Khan", co: "CityBuild Ltd", score: "100", owner: "K" }]},
     { label: "Lost", color: "#64748b", cards: []},
   ];
   return (
@@ -345,8 +509,8 @@ export function PipelineScene({ variant }: { variant: string | null }) {
             <p className="text-[10px] text-white/50">Drag cards between stages. Badge shows the lead score.</p>
           </div>
           <SpotInline id="filter" className="flex gap-1.5">
-            <span className="rounded-full bg-white/20 px-3 py-1 text-[10px] font-semibold ring-1 ring-white/30">All leads</span>
-            <span className="rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ring-white/15 text-white/60">My leads</span>
+            <span className={`rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${mine ? "ring-white/15 text-white/60" : "bg-white/20 ring-white/30"}`}>All leads</span>
+            <span className={`rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${mine ? "bg-white/20 ring-white/30" : "ring-white/15 text-white/60"}`}>My leads</span>
           </SpotInline>
         </div>
         <Spot id="stats" className="grid grid-cols-3 gap-3">
@@ -372,16 +536,20 @@ export function PipelineScene({ variant }: { variant: string | null }) {
                   <div
                     key={k.n}
                     data-spot={dragged && k.n === "Sarah Jones" ? "dropped" : undefined}
-                    className={`rounded-lg border p-2.5 ${dragged && k.n === "Sarah Jones" ? "animate-holo-in border-brand/50 bg-brand/10" : dragging && k.n === "Sarah Jones" ? "animate-drag-card relative z-20 border-brand/70 bg-brand/15 shadow-[0_16px_40px_-8px_rgba(220,38,38,0.6)]" : "border-white/10 bg-white/[0.07]"} ${k.overdue ? "border-red-400/40" : ""}`}
+                    className={`rounded-lg border p-2.5 transition-opacity duration-500 ${mine && k.owner !== "K" ? "opacity-20" : ""} ${dragged && k.n === "Sarah Jones" ? "animate-holo-in border-brand/50 bg-brand/10" : dragging && k.n === "Sarah Jones" ? "animate-drag-card relative z-20 border-brand/70 bg-brand/15 shadow-[0_16px_40px_-8px_rgba(220,38,38,0.6)]" : "border-white/10 bg-white/[0.07]"} ${k.overdue ? "border-red-400/40" : ""}`}
                   >
                     <div className="flex items-start justify-between">
                       <p className="text-[11px] font-semibold">{k.n}</p>
                       <span className="rounded-full bg-red-400/15 px-1.5 text-[8px] font-bold text-red-300 ring-1 ring-red-400/40">{k.score}</span>
                     </div>
                     <p className="mt-0.5 text-[9px] text-white/45">{k.co}</p>
-                    <p className="mt-1.5 flex justify-between text-[9px]">
+                    <p className="mt-1.5 flex items-center justify-between text-[9px]">
                       <span className="font-semibold">£4,800</span>
-                      {k.overdue && <span className="font-semibold text-red-300">Overdue</span>}
+                      <span className="flex items-center gap-1">
+                        {k.overdue && <span className="font-semibold text-red-300">Overdue</span>}
+                        {k.in && <span className="flex h-3 w-3 items-center justify-center rounded-sm bg-[#0a66c2] text-[6px] font-bold">in</span>}
+                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gradient-to-br from-brand to-orange-500 text-[7px] font-bold">{k.owner}</span>
+                      </span>
                     </p>
                   </div>
                 ))}
@@ -521,6 +689,8 @@ export function RadarScene({ variant, typing }: { variant: string | null; typing
 
 export function ProspectingScene({ variant, typing }: { variant: string | null; typing?: Typing }) {
   const filled = variant === "researched";
+  if (variant === "import" || variant === "import_ready" || variant === "import_done")
+    return <ImportScene variant={variant} typing={typing} nav="/admin/prospecting" />;
   return (
     <AppFrame nav="/admin/prospecting">
       <div className="holo-theme space-y-3 p-5 text-white">
@@ -529,13 +699,20 @@ export function ProspectingScene({ variant, typing }: { variant: string | null; 
             <h1 className="text-xl font-bold">LinkedIn Prospecting</h1>
             <p className="mt-0.5 text-[10px] text-white/50">Every new lead waits here until their LinkedIn profile is saved — researched leads give you a second outreach channel.</p>
           </div>
-          <span className="rounded-full bg-[#0a66c2] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Import Sales Navigator list</span>
+          <SpotInline id="importsn">
+            <span className="rounded-full bg-[#0a66c2] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Import Sales Navigator list</span>
+          </SpotInline>
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[["Awaiting research", "4"], ["Profiles saved", "12"], ["LinkedIn coverage", "75%"]].map(([l, v]) => (
+        <Spot id="pstats" className="grid grid-cols-3 gap-3">
+          {[["Awaiting research", "4"], ["Profiles saved", "12"]].map(([l, v]) => (
             <div key={l as string} className={`${glass} p-3`}><p className={pTitle}>{l}</p><p className="mt-1 text-xl font-extrabold">{v}</p></div>
           ))}
-        </div>
+          <div className={`${glass} p-3`}>
+            <p className={pTitle}>LinkedIn coverage</p>
+            <p className="mt-1 text-xl font-extrabold">75%</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full w-3/4 rounded-full bg-[#0a66c2]" /></div>
+          </div>
+        </Spot>
         <div className="grid grid-cols-3 gap-4">
           <Spot id="queue" className={`${glass} col-span-2 overflow-hidden`}>
             <p className="border-b border-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-widest">Research queue (4)</p>
@@ -600,7 +777,8 @@ export function ProspectingScene({ variant, typing }: { variant: string | null; 
 /* ============================= OUTREACH ============================ */
 
 export function OutreachScene({ variant }: { variant: string | null }) {
-  const composed = variant === "composed";
+  const composed = variant === "composed" || variant === "sent";
+  const sent = variant === "sent";
   return (
     <AppFrame nav="/admin/outreach">
       <div className="holo-theme space-y-3 p-5 text-white">
@@ -608,48 +786,69 @@ export function OutreachScene({ variant }: { variant: string | null }) {
           <h1 className="text-xl font-bold">Outreach</h1>
           <p className="text-[10px] text-white/50">Campaigns, automated follow-up sequences and open tracking — from hello@thecontractorbroker.com.</p>
         </div>
-        <div className="grid grid-cols-4 gap-3">
+        <Spot id="ostats" className="grid grid-cols-4 gap-3">
           {[["Emails sent", "312"], ["Open rate", "41%"], ["Opens this week", "9"], ["Sequences running", "3"]].map(([l, v]) => (
             <div key={l as string} className={`${glass} p-3`}><p className="text-lg font-bold">{v}</p><p className={pTitle}>{l}</p></div>
           ))}
-        </div>
+        </Spot>
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2 space-y-3">
-            <Spot id="composer" className={`${glass} p-4`}>
+            <Spot id="composer" className={`${glass} space-y-2.5 p-4`}>
               <p className={pTitle}>Start a campaign</p>
-              <div className="mt-2 flex gap-4">
-                <div className="w-40 space-y-1">
-                  <p className="text-[9px] font-semibold uppercase tracking-widest text-white/40">Recipients</p>
-                  {["Sarah Jones", "Priya Shah", "Emma Clarke"].map((n) => (
-                    <p key={n} className="flex items-center gap-1.5 text-[10px] text-white/70">
-                      <span className={`h-3 w-3 rounded border ${n !== "Raymond Abbott" ? "border-brand bg-brand" : "border-white/30"}`} />{n}
-                    </p>
-                  ))}
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  <div className="flex gap-1.5">
-                    {["Gentle chase", "New lead intro", "Comparison"].map((t, i) => (
-                      <span key={t} className={`rounded-full px-2.5 py-1 text-[9px] font-semibold ring-1 ${i === (composed ? 0 : -1) ? "bg-brand/20 text-brand-light ring-brand/40" : "ring-white/15 text-white/55"}`}>{t}</span>
-                    ))}
-                  </div>
-                  {composed && (
-                    <div className="animate-pop-in rounded-xl border border-white/10 bg-white/5 p-2.5 text-[9px] leading-relaxed text-white/60">
-                      Hi Sarah — just floating this back up in case it got buried. The comparison&apos;s free and takes about 10 minutes…
-                    </div>
-                  )}
-                  <span className={`inline-block rounded-full px-4 py-1.5 text-[9px] font-semibold uppercase tracking-widest ${composed ? "bg-gradient-to-r from-brand to-brand-light shadow-[0_0_18px_-4px_rgba(220,38,38,0.9)]" : "bg-white/10 text-white/50"}`}>
-                    Send 3 personalised emails
-                  </span>
+              <div data-spot="templates" className="flex gap-1.5">
+                {["Gentle chase", "New lead intro ◆", "Comparison", "Custom"].map((t, i) => (
+                  <span key={t} className={`rounded-full px-2.5 py-1 text-[9px] font-semibold ring-1 ${i === (composed ? 0 : -1) ? "bg-white/20 text-white ring-white/40" : "ring-white/15 text-white/55"}`}>{t}</span>
+                ))}
+              </div>
+              {composed && (
+                <p className="animate-pop-in rounded-lg bg-brand/10 px-2.5 py-1.5 text-[9px] text-white/60"><span className="font-semibold text-brand-light">◆ Branded send</span> — every lead gets the full interactive email, personalised with their name and company.</p>
+              )}
+              <div data-spot="msgform" className="space-y-1.5">
+                <span className="block rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40">Campaign name (e.g. January intro blast)</span>
+                <span className="block rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] text-white/40">Subject</span>
+                <div className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5">
+                  <p className="text-[10px] text-white/40">Write your message…</p>
+                  <p className="mt-1 text-[8px] text-white/30">Merge tags: {"{firstName}"}, {"{companyClause}"}, {"{senderName}"} — filled in per lead automatically.</p>
                 </div>
               </div>
+              <div data-spot="previewrow" className="flex items-center gap-1.5">
+                <span className="rounded-full border border-white/15 px-2.5 py-1 text-[9px] font-semibold text-white/60">Attach files</span>
+                <span className="rounded-full border border-white/15 px-2.5 py-1 text-[9px] font-semibold text-white/60">Preview</span>
+                <span className="rounded-full border border-white/15 px-2.5 py-1 text-[9px] font-semibold text-white/60">Send me a test</span>
+                <span className="ml-auto text-[8px] text-white/30">Up to 5 files · 20 MB each</span>
+              </div>
+              {composed && (
+                <div className="animate-holo-in overflow-hidden rounded-lg border border-white/10">
+                  <p className="border-b border-white/10 bg-white/5 px-2.5 py-1 text-[8px] font-semibold uppercase tracking-widest text-white/40">Preview — shown as “Jordan Smith at Acme Contracts Ltd”</p>
+                  <p className="bg-white/[0.03] p-2.5 text-[9px] leading-relaxed text-white/60">Hi Sarah — just floating this back up in case it got buried. The comparison&apos;s free and takes about 10 minutes…</p>
+                </div>
+              )}
+              <Spot id="audience" className="rounded-lg border border-white/10">
+                <div className="flex items-center gap-1.5 border-b border-white/10 px-2.5 py-1.5">
+                  {["All", "New", "Contacted", "Qualified"].map((s, i) => (
+                    <span key={s} className={`rounded-full px-2 py-0.5 text-[8px] font-semibold ${i === 0 ? "bg-white/20 text-white" : "text-white/50"}`}>{s}</span>
+                  ))}
+                  <span className="ml-auto rounded-full bg-brand/15 px-2 py-0.5 text-[8px] font-bold text-brand-light">3 selected</span>
+                </div>
+                <p className="flex items-center gap-2 border-b border-white/[0.06] px-2.5 py-1.5 text-[10px] font-semibold"><span className="flex h-3 w-3 items-center justify-center rounded border border-brand bg-brand text-[7px]">✓</span>Select all shown</p>
+                {["Sarah Jones · Meridian IT", "Priya Shah · Bright Contracts", "Emma Clarke · Bright Contracts"].map((n) => (
+                  <p key={n} className="flex items-center gap-2 border-b border-white/[0.04] px-2.5 py-1 text-[10px] last:border-0"><span className="flex h-3 w-3 items-center justify-center rounded border border-brand bg-brand text-[7px]">✓</span>{n}</p>
+                ))}
+              </Spot>
+              <span data-spot="sendbtn" className={`block rounded-full py-2 text-center text-[9px] font-semibold uppercase tracking-widest ${sent ? "bg-emerald-400/20 text-emerald-300 ring-1 ring-emerald-400/40" : composed ? "bg-gradient-to-r from-brand to-brand-light shadow-[0_0_18px_-4px_rgba(220,38,38,0.9)]" : "bg-white/10 text-white/50"}`}>
+                {sent ? "✓ Campaign sent" : "Send 3 personalised emails"}
+              </span>
             </Spot>
             <Spot id="past" className={`${glass} p-4`}>
               <p className={pTitle}>Past campaigns</p>
               <table className="mt-1 w-full text-[10px]">
-                <thead><tr className="text-left text-[8px] uppercase tracking-widest text-white/40"><th className="pb-1">Campaign</th><th className="pb-1">Sent</th><th className="pb-1">Opens</th><th className="pb-1">Date</th></tr></thead>
+                <thead><tr className="text-left text-[8px] uppercase tracking-widest text-white/40"><th className="pb-1">Campaign</th><th className="pb-1">Sent</th><th className="pb-1">Failed</th><th className="pb-1">Opens</th><th className="pb-1">Date</th></tr></thead>
                 <tbody>
-                  {[["October contractors", "48", "19", "12 Oct"], ["September chase", "61", "24", "28 Sept"]].map((r) => (
-                    <tr key={r[0]} className="border-t border-white/[0.06]">{r.map((c, i) => <td key={i} className="py-1.5">{i === 2 ? <span className="font-semibold text-emerald-300">{c}</span> : c}</td>)}</tr>
+                  {sent && (
+                    <tr className="animate-pop-in border-t border-white/[0.06] bg-emerald-400/[0.05]"><td className="py-1.5 font-semibold">October chase</td><td>3</td><td>0</td><td><span className="font-semibold text-emerald-300">0</span></td><td className="text-white/40">just now</td></tr>
+                  )}
+                  {[["October contractors", "48", "1", "19", "12 Oct"], ["September chase", "61", "0", "24", "28 Sept"]].map((r) => (
+                    <tr key={r[0]} className="border-t border-white/[0.06]">{r.map((c, i) => <td key={i} className="py-1.5">{i === 3 ? <span className="font-semibold text-emerald-300">{c}</span> : c}</td>)}</tr>
                   ))}
                 </tbody>
               </table>
@@ -674,7 +873,7 @@ export function OutreachScene({ variant }: { variant: string | null }) {
               <p className={pTitle}>Sequences</p>
               <p className="mt-1 text-[9px] text-white/50">now intro → +3d chase → +7d last call. Auto-chases until they convert or you stop it.</p>
               <div className="mt-2 rounded-lg border border-white/10 px-2.5 py-1.5">
-                <p className="text-[10px] font-semibold">Emma Clarke</p>
+                <p className="flex items-center justify-between text-[10px] font-semibold">Emma Clarke <span className="rounded-full border border-white/15 px-2 py-0.5 text-[8px] font-semibold text-white/50">Stop</span></p>
                 <div className="mt-1 flex gap-1">{[0, 1, 2].map((i) => <span key={i} className={`h-1 flex-1 rounded-full ${i < 2 ? "bg-brand" : "bg-white/15"}`} />)}</div>
                 <p className="mt-1 text-[8px] text-white/40">Step 2 of 3 · next send tomorrow</p>
               </div>
@@ -745,6 +944,11 @@ export function CalendarScene({ variant }: { variant: string | null }) {
                   )}
                 </div>
               ))}
+            </div>
+            <div className="flex gap-3 border-t border-white/10 px-4 py-1.5 text-[8px] text-white/45">
+              <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />New lead</span>
+              <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Follow-up due</span>
+              <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-400" />Overdue</span>
             </div>
           </Spot>
           <div className="space-y-3">
@@ -858,7 +1062,7 @@ export function ReportsScene({ variant }: { variant: string | null }) {
 /* ========================= VISITORS & TEAM ========================= */
 
 export function AdminScene({ variant }: { variant: string | null }) {
-  void variant;
+  const userOff = variant === "user_off";
   return (
     <AppFrame nav="/admin/visitors">
       <div className="holo-theme space-y-3 p-5 text-white">
@@ -893,19 +1097,19 @@ export function AdminScene({ variant }: { variant: string | null }) {
         <div className="grid grid-cols-2 gap-4">
           <Spot id="teamtable" className={`${glass} overflow-hidden`}>
             <p className="border-b border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest">Team · Users (2)</p>
-            {[["Kevin Quirk", "Super Admin", "Active", "—"], ["Jo Reeves", "Staff", "Active", "Disable"]].map((r) => (
+            {[["Kevin Quirk", "Super Admin", "Active", "—"], ["Jo Reeves", "Staff", userOff ? "Disabled" : "Active", userOff ? "Enable" : "Disable"]].map((r, i) => (
               <div key={r[0]} className="flex items-center gap-2 border-b border-white/[0.05] px-3 py-2 text-[10px] last:border-0">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-brand to-orange-500 text-[9px] font-bold">{r[0][0]}</span>
                 <span className="flex-1 font-semibold">{r[0]}<span className="block text-[8px] font-normal text-white/40">{r[0].toLowerCase().replace(" ", ".")}@tcb.com</span></span>
                 <span className={`rounded-full px-2 py-0.5 text-[8px] font-semibold ring-1 ${r[1] === "Super Admin" ? "bg-brand/15 text-brand-light ring-brand/40" : "bg-white/10 text-white/60 ring-white/15"}`}>{r[1]}</span>
-                <span className="text-emerald-300">{r[2]}</span>
-                <span className="rounded-full px-2 py-0.5 text-[8px] font-semibold ring-1 ring-white/15 text-white/50">{r[3]}</span>
+                <span className={`flex items-center gap-1 ${r[2] === "Active" ? "text-emerald-300" : "text-white/40"}`}><span className={`h-1.5 w-1.5 rounded-full ${r[2] === "Active" ? "bg-emerald-400" : "bg-white/30"}`} />{r[2]}</span>
+                <span data-spot={i === 1 ? "disablebtn" : undefined} className={`rounded-full px-2 py-0.5 text-[8px] font-semibold ring-1 ${r[2] === "Disabled" ? "bg-emerald-400/15 text-emerald-300 ring-emerald-400/40" : "ring-white/15 text-white/50"}`}>{r[3]}</span>
               </div>
             ))}
           </Spot>
           <Spot id="adduser" className={`${glass} p-3`}>
             <p className={pTitle}>Add employee</p>
-            {["Full name", "Email", "Temporary password"].map((p) => (
+            {["Full name", "Email address", "Password (min 8 chars)", "Staff ▾"].map((p) => (
               <span key={p} className="mt-1.5 block rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-[10px] text-white/35">{p}</span>
             ))}
             <span className="mt-2 inline-block rounded-full bg-gradient-to-r from-brand to-brand-light px-4 py-1.5 text-[9px] font-semibold uppercase tracking-widest">Create user</span>
