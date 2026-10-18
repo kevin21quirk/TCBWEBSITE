@@ -69,7 +69,6 @@ export function HoloBackdrop({ fixed = false }: { fixed?: boolean }) {
       >
         <div className="holo-grid absolute inset-0" />
       </div>
-      <div className="animate-holo-scan absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_40%,_rgba(4,6,13,0.6)_100%)]" />
     </div>
   );

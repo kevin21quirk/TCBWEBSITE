@@ -18,6 +18,7 @@ import { sql } from "@/lib/db";
 import { AreaChart, Bars, Donut, Gauge, RankBars } from "./DashboardCharts";
 import { CountUp, HoloCard, LiveClock } from "./DashboardFx";
 import { QuickDelete, SpamBadge } from "./leads/SpamControls";
+import WelcomeModal, { type QuickLink } from "./WelcomeModal";
 
 export const metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -332,8 +333,39 @@ export default async function DashboardPage() {
     sub: r.won ? `${r.won} won` : undefined,
   }));
 
+  const quickLinks: QuickLink[] = [
+    {
+      href: "/admin/leads",
+      label: "Leads",
+      hint: `${byStatus.new ?? 0} new · ${open} open`,
+      count: total,
+      icon: <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />,
+    },
+    {
+      href: "/admin/calendar",
+      label: "Calendar",
+      hint: overdueCount ? `${overdueCount} overdue · ${dueToday} due today` : `${dueToday} due today`,
+      count: overdueCount + dueToday,
+      icon: <path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V9h14v10zM5 7V5h14v2H5zm2 4h5v5H7v-5z" />,
+    },
+    {
+      href: "/admin/radar",
+      label: "Lead Radar",
+      hint: "Find newly incorporated companies",
+      icon: <path d="M12 2a10 10 0 1 0 9.54 7h-2.06A8 8 0 1 1 12 4V2zm0 4a6 6 0 1 0 5.66 4H12V6zm0 3a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />,
+    },
+    {
+      href: "/admin/pipeline",
+      label: "Pipeline",
+      hint: `${money.format(pipelineValue)} in play · ${hot.length} hot`,
+      count: open,
+      icon: <path d="M3 3h5v18H3V3zm6.5 0h5v12h-5V3zM16 3h5v8h-5V3z" />,
+    },
+  ];
+
   return (
     <div className="relative text-white">
+      <WelcomeModal name={user.name} links={quickLinks} />
       <div className="space-y-6">
         {/* command deck header */}
         <div className="animate-holo-in flex flex-wrap items-end justify-between gap-4">

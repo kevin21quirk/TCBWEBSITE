@@ -65,7 +65,7 @@ export async function loginAction(
   if (!userId) return { error: "Invalid email or password" };
 
   await createSession(userId);
-  redirect("/admin");
+  redirect("/admin?welcome=1");
 }
 
 export async function logoutAction() {

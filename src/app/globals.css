@@ -608,20 +608,6 @@ body {
   -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent 75%);
 }
 
-/* Horizontal scan beam */
-@keyframes holo-scan {
-  from {
-    transform: translateY(-20vh);
-  }
-  to {
-    transform: translateY(120vh);
-  }
-}
-
-.animate-holo-scan {
-  animation: holo-scan 11s linear infinite;
-}
-
 /* Chart line drawing in */
 @keyframes draw-line {
   from {
@@ -894,7 +880,6 @@ body {
 
   .animate-holo-in,
   .animate-holo-drift,
-  .animate-holo-scan,
   .animate-draw,
   .animate-grow-y,
   .animate-holo-ping {
