@@ -867,3 +867,22 @@ export async function toggleUserActive(userId: number) {
   });
   revalidatePath("/admin/users");
 }
+
+/** Force-sign-out one session (super admin, from the audit page). */
+export async function revokeSession(token: string) {
+  const admin = await requireSuperAdmin();
+  const row = (
+    await sql`SELECT u.id, u.name FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ${token}`
+  )[0];
+  if (row) {
+    await sql`DELETE FROM sessions WHERE token = ${token}`;
+    await audit({
+      user: admin,
+      action: "session.revoke",
+      entity: "user",
+      entityId: row.id,
+      detail: `Signed out "${row.name}"`,
+    });
+  }
+  revalidatePath("/admin/audit");
+}

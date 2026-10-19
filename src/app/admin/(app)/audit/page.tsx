@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { revokeSession } from "@/app/admin/actions";
 import { requireSuperAdmin } from "@/lib/auth";
 import { sql } from "@/lib/db";
 
@@ -44,6 +46,7 @@ const ACTION_LABELS: Record<string, string> = {
   "user.create": "Created user",
   "user.disable": "Disabled user",
   "user.enable": "Enabled user",
+  "session.revoke": "Signed out",
 };
 
 const CATEGORIES: [string, string][] = [
@@ -88,6 +91,7 @@ export default async function AuditPage({
   searchParams: Promise<{ user?: string; cat?: string; days?: string; q?: string }>;
 }) {
   await requireSuperAdmin();
+  const myToken = (await cookies()).get("tcb_session")?.value;
   const sp = await searchParams;
   const userId = Number(sp.user) || null;
   const cat = CATEGORIES.some(([c]) => c === sp.cat) ? (sp.cat ?? "") : "";
@@ -97,7 +101,7 @@ export default async function AuditPage({
   const q = (sp.q ?? "").trim().slice(0, 100);
   const pattern = `%${q}%`;
 
-  const [rows, users, stats] = await Promise.all([
+  const [rows, users, stats, sessions] = await Promise.all([
     sql`
       SELECT id, user_id, user_name, action, entity, entity_id, detail, ip, created_at
       FROM audit_log
@@ -120,6 +124,17 @@ export default async function AuditPage({
             AND created_at > now() - interval '24 hours'
         )::int AS failed_logins
       FROM audit_log`,
+    sql`
+      SELECT s.token, s.created_at AS signed_in_at, s.expires_at,
+             u.id AS user_id, u.name, u.email, u.role,
+             (SELECT ip FROM audit_log a
+              WHERE a.user_id = u.id AND a.action = 'auth.login'
+              ORDER BY a.created_at DESC LIMIT 1) AS ip,
+             (SELECT max(a.created_at) FROM audit_log a
+              WHERE a.user_id = u.id) AS last_active
+      FROM sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.expires_at > now()
+      ORDER BY s.created_at DESC`,
   ]);
 
   const s = stats[0] as {
@@ -154,6 +169,86 @@ export default async function AuditPage({
           sent, imports, exports and account changes. Super admins only.
         </p>
       </header>
+
+      {/* live sessions */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-ink">
+            Signed in now ({sessions.length})
+          </h2>
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            Live
+          </span>
+        </div>
+        {sessions.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">
+            Nobody is signed in.
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {(sessions as {
+              token: string;
+              signed_in_at: string;
+              expires_at: string;
+              user_id: number;
+              name: string;
+              email: string;
+              role: string;
+              ip: string | null;
+              last_active: string | null;
+            }[]).map((s) => (
+              <li
+                key={s.token}
+                className="flex items-center gap-4 px-6 py-3.5"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-orange-500 text-sm font-bold text-white">
+                  {s.name.charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-x-2 text-sm">
+                    <span className="font-semibold text-ink">{s.name}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ring-1 ${
+                        s.role === "super_admin"
+                          ? "bg-brand/10 text-brand ring-brand/30"
+                          : "bg-slate-100 text-slate-600 ring-slate-200"
+                      }`}
+                    >
+                      {s.role === "super_admin" ? "Super Admin" : "Staff"}
+                    </span>
+                    {s.token === myToken && (
+                      <span className="text-[10px] font-semibold text-slate-400">
+                        (this device)
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">
+                    {s.email}
+                    {s.ip && ` · ${s.ip}`} · signed in{" "}
+                    {fmt.format(new Date(s.signed_in_at))}
+                    {s.last_active &&
+                      ` · last active ${fmt.format(new Date(s.last_active))}`}
+                  </p>
+                </div>
+                {s.token !== myToken && (
+                  <form action={revokeSession.bind(null, s.token)}>
+                    <button
+                      type="submit"
+                      className="shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold text-red-600 ring-1 ring-red-200 transition-colors hover:bg-red-50"
+                    >
+                      Sign out
+                    </button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {/* stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
