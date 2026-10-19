@@ -58,10 +58,11 @@ export default function AdminHeader({
         </p>
       </div>
 
-      {/* quick launch */}
+      {/* quick launch — scrolls inside itself on very narrow screens
+          instead of pushing the header past the viewport edge */}
       <nav
         aria-label="Quick launch"
-        className="glass flex items-center gap-1 rounded-full p-1"
+        className="glass flex min-w-0 shrink items-center gap-1 overflow-x-auto rounded-full p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {QUICK.map((q) => {
           const active = pathname.startsWith(q.href);

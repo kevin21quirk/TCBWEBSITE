@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
@@ -31,7 +32,9 @@ export async function destroySession() {
   }
 }
 
-export async function currentUser(): Promise<CrmUser | null> {
+// Deduped per request: layout and page both call this on every navigation,
+// so cache() turns two session lookups into one DB round-trip.
+export const currentUser = cache(async (): Promise<CrmUser | null> => {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;
@@ -40,7 +43,7 @@ export async function currentUser(): Promise<CrmUser | null> {
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token = ${token} AND s.expires_at > now() AND u.active`;
   return (rows[0] as CrmUser | undefined) ?? null;
-}
+});
 
 export async function verifyLogin(email: string, password: string) {
   const rows = await sql`

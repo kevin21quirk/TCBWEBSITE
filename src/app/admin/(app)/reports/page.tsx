@@ -284,7 +284,8 @@ export default async function ReportsPage({
           <div className="border-b border-slate-100 px-6 py-4">
             <h2 className={h2}>Team Leaderboard</h2>
           </div>
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60 text-xs font-semibold uppercase tracking-widest text-slate-500">
                 <th className="px-6 py-3">Member</th>
@@ -313,6 +314,7 @@ export default async function ReportsPage({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* top pages */}

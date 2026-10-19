@@ -61,7 +61,7 @@ function WelcomeModalInner({ name, links }: { name: string; links: QuickLink[] }
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="glass animate-holo-in relative w-full max-w-2xl overflow-y-auto rounded-3xl p-6 text-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] sm:p-8 max-h-[calc(100dvh-2rem)]"
+        className="glass animate-modal-in relative w-full max-w-2xl overflow-y-auto rounded-3xl p-6 text-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] sm:p-8 max-h-[calc(100dvh-2rem)]"
       >
         <button
           type="button"
@@ -91,7 +91,7 @@ function WelcomeModalInner({ name, links }: { name: string; links: QuickLink[] }
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
-              className="group animate-holo-in flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:-translate-y-0.5 hover:border-brand-light/60 hover:bg-white/10 hover:shadow-[0_0_30px_-8px_rgba(239,68,68,0.7)]"
+              className="group animate-modal-in flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:-translate-y-0.5 hover:border-brand-light/60 hover:bg-white/10 hover:shadow-[0_0_30px_-8px_rgba(239,68,68,0.7)]"
               style={{ ["--delay" as string]: `${120 + i * 70}ms` }}
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-orange-500 text-white shadow-[0_0_18px_-4px_rgba(220,38,38,0.9)]">
