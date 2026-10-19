@@ -31,7 +31,8 @@ export default async function UsersPage() {
               Users ({users.length})
             </h2>
           </div>
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60 text-xs font-semibold uppercase tracking-widest text-slate-500">
                 <th className="px-6 py-4">User</th>
@@ -106,6 +107,7 @@ export default async function UsersPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* create user */}

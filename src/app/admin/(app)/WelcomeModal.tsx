@@ -61,7 +61,7 @@ function WelcomeModalInner({ name, links }: { name: string; links: QuickLink[] }
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="glass animate-holo-in relative w-full max-w-2xl rounded-3xl p-8 text-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
+        className="glass animate-holo-in relative w-full max-w-2xl overflow-y-auto rounded-3xl p-6 text-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] sm:p-8 max-h-[calc(100dvh-2rem)]"
       >
         <button
           type="button"

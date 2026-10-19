@@ -210,6 +210,12 @@ export default function TrainingPlayer({
         </div>
       </div>
 
+      {/* rotate hint — the stage is 1280px wide so portrait phones shrink it
+          to an unreadable size; landscape makes it comfortably legible */}
+      <p className="border-b border-white/10 bg-white/[0.03] px-5 py-2 text-center text-[11px] font-medium text-white/50 [@media(orientation:landscape)]:hidden sm:hidden">
+        Rotate your phone sideways for a bigger view
+      </p>
+
       {/* stage */}
       <div ref={viewRef} style={{ aspectRatio: `${STAGE_W} / 640` }} className="relative overflow-hidden bg-[#070b16]">
         <div style={{ transform: `scale(${scale})`, transformOrigin: "0 0", width: STAGE_W, height: SCENE_H, position: "absolute", left: 0, top: 0, overflow: "hidden" }}>
@@ -386,7 +392,7 @@ export default function TrainingPlayer({
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-light">
           {idx + 1} / {steps.length} · {step.chapter}
         </p>
-        <p className="mt-1.5 min-h-[3.4rem] text-xl font-medium leading-snug text-white">
+        <p className="mt-1.5 min-h-[3.4rem] text-base font-medium leading-snug text-white sm:text-xl">
           {t >= total
             ? "Lesson complete — watch again, open the live section, or move on to the next lesson."
             : step.caption.slice(0, chars)}
