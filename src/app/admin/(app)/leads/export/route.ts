@@ -1,3 +1,4 @@
+import { audit } from "@/lib/audit";
 import { requireUser } from "@/lib/auth";
 import { LEAD_STATUSES, dealValue, scoreLead, type Lead } from "@/lib/crm";
 import { sql } from "@/lib/db";
@@ -12,7 +13,7 @@ const cell = (v: unknown) => {
 };
 
 export async function GET(req: Request) {
-  await requireUser();
+  const user = await requireUser();
   const p = new URL(req.url).searchParams;
   const q = p.get("q") ?? "";
   const status = (LEAD_STATUSES as readonly string[]).includes(p.get("status") ?? "")
@@ -55,6 +56,11 @@ export async function GET(req: Request) {
   });
 
   const csv = "\uFEFF" + [header.map(cell).join(","), ...lines].join("\r\n");
+  await audit({
+    user,
+    action: "leads.export",
+    detail: `Exported ${rows.length} leads to CSV`,
+  });
   const date = new Date().toISOString().slice(0, 10);
   return new Response(csv, {
     headers: {

@@ -149,6 +149,20 @@ const statements = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS seq_enrol_due_idx ON sequence_enrolments(next_send_at) WHERE active = true`,
+  `CREATE TABLE IF NOT EXISTS audit_log (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    user_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    entity TEXT,
+    entity_id INT,
+    detail TEXT,
+    ip TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS audit_log_created_idx ON audit_log(created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS audit_log_user_idx ON audit_log(user_id)`,
+  `CREATE INDEX IF NOT EXISTS audit_log_action_idx ON audit_log(action)`,
 ];
 
 for (const s of statements) {

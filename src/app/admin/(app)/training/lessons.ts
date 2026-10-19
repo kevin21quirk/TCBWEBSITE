@@ -616,6 +616,21 @@ export const LESSONS: Lesson[] = [
         caption: "Add employee creates a login in seconds — they can sign in at /admin immediately and start working leads under their own name.",
         spot: "adduser",
       },
+      {
+        chapter: "Audit log",
+        caption: "The Audit Log records everything the team does — sign-ins, leads created or deleted, emails sent, imports and exports. If a lead disappears, this is where you find out who did it and when.",
+        spot: "alog",
+      },
+      {
+        chapter: "Filtering the log",
+        caption: "Narrow it down by person, category or date range — and watch the failed-logins counter. Repeated failures on one email usually mean someone's knocking on the door.",
+        spot: "afilters",
+      },
+      {
+        chapter: "Log summary",
+        caption: "The stat cards up top give you the day at a glance — total events, how many users were active, and any failed login attempts in the last 24 hours.",
+        spot: "astats",
+      },
     ],
   },
 ];

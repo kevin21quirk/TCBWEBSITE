@@ -1115,6 +1115,41 @@ export function AdminScene({ variant }: { variant: string | null }) {
             <span className="mt-2 inline-block rounded-full bg-gradient-to-r from-brand to-brand-light px-4 py-1.5 text-[9px] font-semibold uppercase tracking-widest">Create user</span>
           </Spot>
         </div>
+
+        {/* audit log */}
+        <div className="pt-2">
+          <h1 className="text-xl font-bold">Audit Log</h1>
+          <p className="mt-0.5 text-[10px] text-white/50">Everything the team does in the CRM — super admins only.</p>
+        </div>
+        <Spot id="astats" className="grid grid-cols-4 gap-3">
+          {[["Events today", "18"], ["This week", "142"], ["Active users today", "2"], ["Failed logins", "0"]].map(([l, v]) => (
+            <div key={l as string} className={`${glass} p-3`}><p className={pTitle}>{l}</p><p className="mt-1 text-2xl font-extrabold">{v}</p></div>
+          ))}
+        </Spot>
+        <Spot id="afilters" className="flex items-center gap-2">
+          {["Everyone ▾", "All activity ▾", "Last 30 days ▾"].map((f) => (
+            <span key={f} className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-[9px] text-white/50">{f}</span>
+          ))}
+          <span className="flex-1 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-[9px] text-white/35">Search details or names…</span>
+          <span className="rounded-lg bg-white px-3 py-1.5 text-[9px] font-semibold uppercase tracking-widest text-ink">Filter</span>
+        </Spot>
+        <Spot id="alog" className={`${glass} overflow-hidden`}>
+          {[
+            ["Kevin Quirk", "Signed in", "bg-sky-400/15 text-sky-300 ring-sky-400/40", "Signed in · 82.45.116.9", "09:02"],
+            ["Jo Reeves", "Created lead", "bg-brand/15 text-brand-light ring-brand/40", 'Created lead "Mo Khan" · lead #58 →', "10:41"],
+            ["Jo Reeves", "Campaign", "bg-violet-400/15 text-violet-300 ring-violet-400/40", 'Campaign "October chase" — 24 sent', "11:15"],
+            ["Kevin Quirk", "Bulk delete", "bg-brand/15 text-brand-light ring-brand/40", "Deleted 3 leads: prize winner, SEO bot, test", "12:03"],
+            ["Jo Reeves", "CSV export", "bg-brand/15 text-brand-light ring-brand/40", "Exported 214 leads to CSV", "14:22"],
+          ].map(([name, badge, cls, detail, time]) => (
+            <div key={`${name}-${badge}`} className="flex items-center gap-2.5 border-b border-white/[0.05] px-4 py-2 last:border-0">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-orange-500 text-[9px] font-bold">{(name as string)[0]}</span>
+              <span className="w-20 shrink-0 text-[10px] font-semibold">{name}</span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider ring-1 ${cls}`}>{badge}</span>
+              <span className="min-w-0 flex-1 truncate text-[10px] text-white/55">{detail}</span>
+              <span className="shrink-0 text-[9px] text-white/35">{time}</span>
+            </div>
+          ))}
+        </Spot>
       </div>
     </AppFrame>
   );

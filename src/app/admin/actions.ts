@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { audit } from "@/lib/audit";
 import {
   createSession,
+  currentUser,
   destroySession,
   hashPassword,
   requireSuperAdmin,
@@ -62,13 +64,37 @@ export async function loginAction(
   if (!email || !password) return { error: "Email and password are required" };
 
   const userId = await verifyLogin(email, password).catch(() => null);
-  if (!userId) return { error: "Invalid email or password" };
+  if (!userId) {
+    await audit({
+      user: null,
+      name: email.trim().toLowerCase(),
+      action: "auth.login_failed",
+      detail: "Failed login attempt",
+    });
+    return { error: "Invalid email or password" };
+  }
 
   await createSession(userId);
+  const name =
+    (await sql`SELECT name FROM users WHERE id = ${userId}`)[0]?.name ??
+    email;
+  await audit({
+    user: { id: userId, name },
+    action: "auth.login",
+    detail: "Signed in",
+  });
   redirect("/admin?welcome=1");
 }
 
 export async function logoutAction() {
+  const user = await currentUser();
+  if (user) {
+    await audit({
+      user,
+      action: "auth.logout",
+      detail: "Signed out",
+    });
+  }
   await destroySession();
   redirect("/admin/login");
 }
@@ -90,6 +116,13 @@ export async function updateLeadStatus(leadId: number, status: string) {
       WHERE lead_id = ${leadId} AND auto = true AND done = false`;
   }
   await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'status', ${`Status changed to ${status}`})`;
+  await audit({
+    user,
+    action: "lead.status",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Status → ${status}`,
+  });
   revalidateLead(leadId);
   revalidatePath("/admin/calendar");
 }
@@ -103,6 +136,13 @@ export async function assignLead(leadId: number, userId: number | null) {
     ? ((await sql`SELECT name FROM users WHERE id = ${userId}`)[0]?.name ?? "a team member")
     : "Unassigned";
   await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'assign', ${`Assigned to ${assignee}`})`;
+  await audit({
+    user,
+    action: "lead.assign",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Assigned to ${assignee}`,
+  });
   revalidateLead(leadId);
 }
 
@@ -121,6 +161,13 @@ export async function logActivity(leadId: number, formData: FormData) {
   } else {
     await sql`UPDATE leads SET updated_at = now() WHERE id = ${leadId}`;
   }
+  await audit({
+    user,
+    action: "lead.activity",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Logged ${type}: ${body.slice(0, 120)}`,
+  });
   revalidateLead(leadId);
 }
 
@@ -149,6 +196,13 @@ export async function updateLeadDetails(leadId: number, formData: FormData) {
       updated_at = now()
     WHERE id = ${leadId}`;
   await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'update', 'Lead details updated')`;
+  await audit({
+    user,
+    action: "lead.update",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Edited details of "${name}"`,
+  });
   revalidateLead(leadId);
 }
 
@@ -166,6 +220,13 @@ export async function saveLinkedinProfile(leadId: number, formData: FormData) {
       updated_at = now()
     WHERE id = ${leadId}`;
   await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'linkedin', ${`LinkedIn profile saved: ${url}`})`;
+  await audit({
+    user,
+    action: "lead.linkedin_save",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Saved LinkedIn profile ${url}`,
+  });
   revalidateLead(leadId);
 }
 
@@ -247,6 +308,13 @@ export async function sendLeadEmail(
   if (uploadIds.length) {
     await sql`DELETE FROM attachment_uploads WHERE upload_id = ANY(${uploadIds})`;
   }
+  await audit({
+    user,
+    action: "email.send",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Sent "${subject}" to ${lead.name} <${lead.email}>`,
+  });
   revalidateLead(leadId);
   revalidatePath("/admin/calendar");
   return { ok: true };
@@ -324,6 +392,13 @@ export async function sendCampaign(
   if (uploadIds.length) {
     await sql`DELETE FROM attachment_uploads WHERE upload_id = ANY(${uploadIds})`;
   }
+  await audit({
+    user,
+    action: "email.campaign",
+    entity: "campaign",
+    entityId: campaign.id,
+    detail: `Campaign "${name}" — ${sent} sent, ${failed} failed, ${skipped} skipped`,
+  });
   revalidatePath("/admin/outreach");
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
@@ -373,6 +448,13 @@ export async function enrollSequence(
   await sql`
     INSERT INTO lead_activities (lead_id, user_id, type, body)
     VALUES (${leadId}, ${user.id}, 'note', 'Enrolled in email sequence (intro + 2 chases)')`;
+  await audit({
+    user,
+    action: "sequence.start",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Started email sequence for ${lead.name}`,
+  });
   revalidateLead(leadId);
   revalidatePath("/admin/outreach");
   return { ok: true };
@@ -388,6 +470,13 @@ export async function stopSequence(
   await sql`
     INSERT INTO lead_activities (lead_id, user_id, type, body)
     VALUES (${leadId}, ${user.id}, 'note', 'Email sequence stopped')`;
+  await audit({
+    user,
+    action: "sequence.stop",
+    entity: "lead",
+    entityId: leadId,
+    detail: "Stopped email sequence",
+  });
   revalidateLead(leadId);
   revalidatePath("/admin/outreach");
   return { ok: true };
@@ -419,6 +508,16 @@ export async function markLinkedinStep(
       VALUES (${leadId}, ${user.id}, 'linkedin',
               ${`Sent the ${script.label.toLowerCase()} on LinkedIn`})`;
   }
+  await audit({
+    user,
+    action: "lead.linkedin_step",
+    entity: "lead",
+    entityId: leadId,
+    detail:
+      step === 0
+        ? "Reset LinkedIn playbook"
+        : `Marked LinkedIn step ${step} done`,
+  });
   revalidateLead(leadId);
   revalidatePath("/admin/outreach");
   return { ok: true };
@@ -434,13 +533,21 @@ export async function sendTestEmail(
   if (!subject.trim() || !body.trim()) {
     return { error: "Subject and message are required" };
   }
-  return sendPreviewEmail({
+  const result = await sendPreviewEmail({
     to: user.email,
     subject: subject.trim(),
     body: body.trim(),
     template,
     origin: await siteOrigin(),
   });
+  if (!result.error) {
+    await audit({
+      user,
+      action: "email.test",
+      detail: `Sent test email "${subject.slice(0, 80)}" to self`,
+    });
+  }
+  return result;
 }
 
 /** Bulk import (e.g. a Sales Navigator / LinkedIn export). */
@@ -506,6 +613,11 @@ export async function importLeads(
       INSERT INTO follow_ups (lead_id, assigned_to, title, due_at, auto)
       SELECT id, ${user.id}::int, 'First outreach', now() + interval '1 day', true FROM ins`;
   }
+  await audit({
+    user,
+    action: "leads.import",
+    detail: `Imported ${fresh.length} leads, skipped ${clean.length - fresh.length} duplicates${tag.trim() ? ` (tag: ${tag.trim()})` : ""}`,
+  });
   revalidatePath("/admin/leads");
   revalidatePath("/admin/prospecting");
   revalidatePath("/admin/calendar");
@@ -516,7 +628,7 @@ export async function createLead(
   _prev: { error?: string } | undefined,
   formData: FormData
 ) {
-  await requireUser();
+  const user = await requireUser();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Name is required" };
   const email = String(formData.get("email") ?? "").trim() || null;
@@ -536,6 +648,13 @@ export async function createLead(
   await sql`
     INSERT INTO follow_ups (lead_id, title, due_at, auto)
     VALUES (${rows[0].id}, 'Chase up — no response yet', now() + interval '7 days', true)`;
+  await audit({
+    user,
+    action: "lead.create",
+    entity: "lead",
+    entityId: rows[0].id,
+    detail: `Created lead "${name}"`,
+  });
   revalidatePath("/admin/leads");
   redirect(`/admin/leads/${rows[0].id}`);
 }
@@ -563,6 +682,13 @@ export async function addProspect(formData: FormData) {
     await sql`
       INSERT INTO lead_activities (lead_id, user_id, type, body)
       VALUES (${rows[0].id}, ${user.id}, 'update', ${`Imported from Lead Radar (Companies House ${number})`})`;
+    await audit({
+      user,
+      action: "lead.create",
+      entity: "lead",
+      entityId: rows[0].id,
+      detail: `Added Radar prospect "${company}"`,
+    });
     revalidatePath("/admin/leads");
     revalidatePath("/admin/prospecting");
     revalidatePath("/admin/calendar");
@@ -598,6 +724,13 @@ export async function addProspectPerson(formData: FormData) {
       INSERT INTO lead_activities (lead_id, user_id, type, body)
       VALUES (${rows[0].id}, ${user.id}, 'update',
               ${`Imported from Lead Radar — ${jobTitle || "officer"} at ${company}`})`;
+    await audit({
+      user,
+      action: "lead.create",
+      entity: "lead",
+      entityId: rows[0].id,
+      detail: `Added officer "${name}"${company ? ` (${company})` : ""} from Radar`,
+    });
     revalidatePath("/admin/leads");
     revalidatePath("/admin/prospecting");
     revalidatePath("/admin/calendar");
@@ -606,8 +739,18 @@ export async function addProspectPerson(formData: FormData) {
 }
 
 export async function deleteLead(leadId: number) {
-  await requireSuperAdmin();
+  const user = await requireSuperAdmin();
+  const name =
+    (await sql`SELECT name FROM leads WHERE id = ${leadId}`)[0]?.name ??
+    `#${leadId}`;
   await sql`DELETE FROM leads WHERE id = ${leadId}`;
+  await audit({
+    user,
+    action: "lead.delete",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Deleted lead "${name}"`,
+  });
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
   revalidatePath("/admin/calendar");
@@ -616,10 +759,15 @@ export async function deleteLead(leadId: number) {
 
 /** Bulk delete (spam clean-up) — stays on the current page. */
 export async function deleteLeads(ids: number[]) {
-  await requireSuperAdmin();
+  const user = await requireSuperAdmin();
   const clean = [...new Set(ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
   if (!clean.length) return { deleted: 0 };
-  const rows = await sql`DELETE FROM leads WHERE id = ANY(${clean}::int[]) RETURNING id`;
+  const rows = await sql`DELETE FROM leads WHERE id = ANY(${clean}::int[]) RETURNING name`;
+  await audit({
+    user,
+    action: "leads.delete",
+    detail: `Deleted ${rows.length} lead${rows.length === 1 ? "" : "s"}${rows.length <= 4 ? `: ${rows.map((r) => r.name).join(", ")}` : ""}`,
+  });
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
   revalidatePath("/admin/pipeline");
@@ -643,14 +791,28 @@ export async function addFollowUp(leadId: number, formData: FormData) {
     INSERT INTO follow_ups (lead_id, assigned_to, title, due_at)
     VALUES (${leadId}, ${user.id}, ${title}, ${date.toISOString()})`;
   await sql`INSERT INTO lead_activities (lead_id, user_id, type, body) VALUES (${leadId}, ${user.id}, 'follow_up', ${`Follow-up scheduled: ${title}`})`;
+  await audit({
+    user,
+    action: "followup.create",
+    entity: "lead",
+    entityId: leadId,
+    detail: `Scheduled follow-up "${title}" for ${due}`,
+  });
   revalidatePath(`/admin/leads/${leadId}`);
   revalidatePath("/admin/calendar");
   revalidatePath("/admin");
 }
 
 export async function completeFollowUp(id: number, leadId: number | null) {
-  await requireUser();
+  const user = await requireUser();
   await sql`UPDATE follow_ups SET done = true, done_at = now() WHERE id = ${id}`;
+  await audit({
+    user,
+    action: "followup.complete",
+    entity: leadId ? "lead" : null,
+    entityId: leadId,
+    detail: `Completed follow-up #${id}`,
+  });
   if (leadId) revalidatePath(`/admin/leads/${leadId}`);
   revalidatePath("/admin/calendar");
   revalidatePath("/admin");
@@ -662,7 +824,7 @@ export async function createUser(
   _prev: { error?: string } | undefined,
   formData: FormData
 ) {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -678,6 +840,12 @@ export async function createUser(
   } catch {
     return { error: "A user with that email already exists" };
   }
+  await audit({
+    user: admin,
+    action: "user.create",
+    entity: "user",
+    detail: `Created ${role === "super_admin" ? "super admin" : "staff"} account "${name}" <${email}>`,
+  });
   revalidatePath("/admin/users");
   return { error: undefined };
 }
@@ -687,5 +855,15 @@ export async function toggleUserActive(userId: number) {
   if (userId === admin.id) return; // can't deactivate yourself
   await sql`UPDATE users SET active = NOT active WHERE id = ${userId}`;
   await sql`DELETE FROM sessions WHERE user_id = ${userId} AND (SELECT active FROM users WHERE id = ${userId}) = false`;
+  const target = (
+    await sql`SELECT name, active FROM users WHERE id = ${userId}`
+  )[0];
+  await audit({
+    user: admin,
+    action: target?.active ? "user.enable" : "user.disable",
+    entity: "user",
+    entityId: userId,
+    detail: `${target?.active ? "Enabled" : "Disabled"} account "${target?.name ?? `#${userId}`}"`,
+  });
   revalidatePath("/admin/users");
 }
