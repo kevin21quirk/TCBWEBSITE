@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
 import {
@@ -868,20 +868,25 @@ export async function toggleUserActive(userId: number) {
   revalidatePath("/admin/users");
 }
 
-/** Force-sign-out one session (super admin, from the audit page). */
-export async function revokeSession(token: string) {
+/** Force-sign-out a user's sessions (super admin, from the audit page).
+ *  The admin's own current session is always spared. */
+export async function revokeUserSessions(userId: number) {
   const admin = await requireSuperAdmin();
-  const row = (
-    await sql`SELECT u.id, u.name FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ${token}`
-  )[0];
-  if (row) {
-    await sql`DELETE FROM sessions WHERE token = ${token}`;
+  const jar = await cookies();
+  const myToken = jar.get("tcb_session")?.value ?? "";
+  const rows = await sql`
+    DELETE FROM sessions WHERE user_id = ${userId} AND token <> ${myToken}
+    RETURNING token`;
+  if (rows.length) {
+    const name =
+      (await sql`SELECT name FROM users WHERE id = ${userId}`)[0]?.name ??
+      `#${userId}`;
     await audit({
       user: admin,
       action: "session.revoke",
       entity: "user",
-      entityId: row.id,
-      detail: `Signed out "${row.name}"`,
+      entityId: userId,
+      detail: `Signed out "${name}" — ${rows.length} session${rows.length === 1 ? "" : "s"}`,
     });
   }
   revalidatePath("/admin/audit");

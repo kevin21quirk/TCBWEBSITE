@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { revokeSession } from "@/app/admin/actions";
+import { revokeUserSessions } from "@/app/admin/actions";
 import { requireSuperAdmin } from "@/lib/auth";
 import { sql } from "@/lib/db";
 
@@ -90,8 +89,7 @@ export default async function AuditPage({
 }: {
   searchParams: Promise<{ user?: string; cat?: string; days?: string; q?: string }>;
 }) {
-  await requireSuperAdmin();
-  const myToken = (await cookies()).get("tcb_session")?.value;
+  const me = await requireSuperAdmin();
   const sp = await searchParams;
   const userId = Number(sp.user) || null;
   const cat = CATEGORIES.some(([c]) => c === sp.cat) ? (sp.cat ?? "") : "";
@@ -125,8 +123,11 @@ export default async function AuditPage({
         )::int AS failed_logins
       FROM audit_log`,
     sql`
-      SELECT s.token, s.created_at AS signed_in_at, s.expires_at,
+      SELECT DISTINCT ON (u.id)
              u.id AS user_id, u.name, u.email, u.role,
+             s.created_at AS signed_in_at,
+             (SELECT count(*) FROM sessions s2
+              WHERE s2.user_id = u.id AND s2.expires_at > now())::int AS session_count,
              (SELECT ip FROM audit_log a
               WHERE a.user_id = u.id AND a.action = 'auth.login'
               ORDER BY a.created_at DESC LIMIT 1) AS ip,
@@ -134,7 +135,7 @@ export default async function AuditPage({
               WHERE a.user_id = u.id) AS last_active
       FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.expires_at > now()
-      ORDER BY s.created_at DESC`,
+      ORDER BY u.id, s.created_at DESC`,
   ]);
 
   const s = stats[0] as {
@@ -191,18 +192,17 @@ export default async function AuditPage({
         ) : (
           <ul className="divide-y divide-slate-100">
             {(sessions as {
-              token: string;
-              signed_in_at: string;
-              expires_at: string;
               user_id: number;
               name: string;
               email: string;
               role: string;
+              signed_in_at: string;
+              session_count: number;
               ip: string | null;
               last_active: string | null;
             }[]).map((s) => (
               <li
-                key={s.token}
+                key={s.user_id}
                 className="flex items-center gap-4 px-6 py-3.5"
               >
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-orange-500 text-sm font-bold text-white">
@@ -220,9 +220,14 @@ export default async function AuditPage({
                     >
                       {s.role === "super_admin" ? "Super Admin" : "Staff"}
                     </span>
-                    {s.token === myToken && (
+                    {s.user_id === me.id && (
                       <span className="text-[10px] font-semibold text-slate-400">
-                        (this device)
+                        (you)
+                      </span>
+                    )}
+                    {s.session_count > 1 && (
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 ring-1 ring-slate-200">
+                        {s.session_count} sessions
                       </span>
                     )}
                   </p>
@@ -234,13 +239,13 @@ export default async function AuditPage({
                       ` · last active ${fmt.format(new Date(s.last_active))}`}
                   </p>
                 </div>
-                {s.token !== myToken && (
-                  <form action={revokeSession.bind(null, s.token)}>
+                {(s.user_id !== me.id || s.session_count > 1) && (
+                  <form action={revokeUserSessions.bind(null, s.user_id)}>
                     <button
                       type="submit"
                       className="shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold text-red-600 ring-1 ring-red-200 transition-colors hover:bg-red-50"
                     >
-                      Sign out
+                      {s.user_id === me.id ? "Sign out other devices" : "Sign out"}
                     </button>
                   </form>
                 )}
